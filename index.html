@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TransitHub — Admin & Manager Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020E1A;--card:#0D1F35;--navy:#1B3A6B;--gold:#C9A84C;--white:#fff;--gray:#6B85AA;
+  --green:#00C9A7;--red:#FF4757;--orange:#FFA502;--sidebar:#0A1628;--border:rgba(27,58,107,.5);
+  --text:#fff;--text2:#6B85AA;--cardbg:#0D1F35;--inputbg:rgba(27,58,107,.3);
+}
+.light{
+  --bg:#F0F4FA;--card:#FFFFFF;--navy:#1B3A6B;--gold:#B8922A;--white:#1A1A2E;--gray:#5A6A8A;
+  --sidebar:#1B3A6B;--border:rgba(0,0,0,.1);--text:#1A1A2E;--text2:#5A6A8A;--cardbg:#fff;--inputbg:rgba(27,58,107,.08);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
+.sidebar{width:220px;background:var(--sidebar);height:100vh;position:fixed;left:0;top:0;display:flex;flex-direction:column;border-right:1px solid var(--border);z-index:100;transition:background .3s}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid rgba(255,255,255,.1)}
+.logo-text{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;margin-top:8px}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.1em;margin-top:2px}
+.sidebar-section{padding:8px 12px;font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-top:16px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;margin:2px 8px;border-radius:10px;cursor:pointer;color:rgba(255,255,255,.6);font-size:13px;transition:all .2s}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:rgba(201,168,76,.2);color:var(--gold)}
+.nav-item .icon{width:20px;height:20px;font-size:16px;display:flex;align-items:center;justify-content:center}
+.main{margin-left:220px;min-height:100vh;display:flex;flex-direction:column}
+.topbar{height:60px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50;transition:background .3s}
+.page-title{font-size:18px;font-weight:500;color:var(--text)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.time-badge{background:var(--inputbg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--text2);font-weight:500}
+.theme-toggle{background:var(--inputbg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:var(--text2);transition:all .2s}
+.theme-toggle:hover{border-color:var(--gold);color:var(--gold)}
+.avatar{width:34px;height:34px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#020E1A;cursor:pointer}
+.content{padding:24px;flex:1}
+.page{display:none}
+.page.active{display:block}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:var(--card);border-radius:14px;padding:18px;border:1px solid var(--border);transition:background .3s}
+.stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px}
+.stat-val{font-size:26px;font-weight:700;color:var(--text);margin-bottom:4px}
+.stat-label{font-size:12px;color:var(--text2)}
+.stat-change{font-size:11px;margin-top:6px}
+.up{color:var(--green)}
+.down{color:var(--red)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.card{background:var(--card);border-radius:14px;padding:18px;border:1px solid var(--border);transition:background .3s}
+.card-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.table{width:100%;border-collapse:collapse}
+.table th{text-align:left;font-size:11px;color:var(--text2);padding:8px 10px;border-bottom:1px solid var(--border);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.table td{padding:10px;font-size:13px;color:var(--text);border-bottom:1px solid var(--border)}
+.table tr:last-child td{border-bottom:none}
+.table tr:hover td{background:var(--inputbg)}
+.badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:500}
+.badge-green{background:rgba(0,201,167,.15);color:var(--green)}
+.badge-red{background:rgba(255,71,87,.15);color:var(--red)}
+.badge-gold{background:rgba(201,168,76,.15);color:var(--gold)}
+.badge-gray{background:rgba(107,133,170,.15);color:var(--gray)}
+.badge-orange{background:rgba(255,165,2,.15);color:var(--orange)}
+.btn{border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s,transform .1s}
+.btn:active{transform:scale(.97)}
+.btn-gold{background:var(--gold);color:#020E1A}
+.btn-outline{background:transparent;border:1px solid var(--gold);color:var(--gold)}
+.btn-red{background:var(--red);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.input{background:var(--inputbg);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;width:100%;margin-bottom:10px;outline:none;transition:border-color .2s}
+.input:focus{border-color:var(--gold)}
+.input::placeholder{color:var(--text2)}
+select.input option{background:var(--card,#0D1F35);color:var(--text,#fff)}
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:120px;padding-top:16px}
+.bar{flex:1;border-radius:6px 6px 0 0;background:rgba(201,168,76,.3);position:relative;cursor:pointer;transition:background .2s}
+.bar:hover{background:var(--gold)}
+.bar-label{font-size:9px;color:var(--text2);text-align:center;margin-top:4px}
+.bar-val{font-size:9px;color:var(--gold);text-align:center;position:absolute;top:-16px;left:0;right:0}
+.donut{width:100px;height:100px;border-radius:50%;background:conic-gradient(var(--gold) 0deg 230deg,var(--green) 230deg 310deg,var(--red) 310deg 360deg);position:relative;margin:0 auto 12px}
+.donut-hole{position:absolute;inset:20px;background:var(--card);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--text)}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);margin-bottom:4px}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:var(--card);border-radius:16px;padding:24px;width:100%;max-width:480px;border:1px solid var(--border)}
+.modal-title{font-size:17px;font-weight:500;color:var(--text);margin-bottom:16px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500}
+.user-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#020E1A}
+.search-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.search-bar input{flex:1}
+.tab-row{display:flex;gap:4px;margin-bottom:16px;background:var(--inputbg);padding:4px;border-radius:10px}
+.tab{flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;cursor:pointer;color:var(--text2);border:none;background:none;font-family:'DM Sans',sans-serif;transition:all .2s}
+.tab.active{background:var(--gold);color:#020E1A;font-weight:500}
+.toast{position:fixed;top:20px;right:20px;background:var(--green);color:#020E1A;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;z-index:300;transition:opacity .4s;pointer-events:none}
+.toast.red{background:var(--red);color:#fff}
+.toast.hidden{opacity:0}
+.progress-bar{height:6px;background:var(--inputbg);border-radius:3px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;border-radius:3px;background:var(--gold)}
+.scan-box{width:200px;height:200px;border-radius:16px;background:var(--inputbg);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin:16px auto;font-size:60px;position:relative;cursor:pointer}
+.scan-corner{position:absolute;width:24px;height:24px}
+.scan-corner.tl{top:-2px;left:-2px;border-top:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:6px 0 0 0}
+.scan-corner.tr{top:-2px;right:-2px;border-top:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 6px 0 0}
+.scan-corner.bl{bottom:-2px;left:-2px;border-bottom:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:0 0 0 6px}
+.scan-corner.br{bottom:-2px;right:-2px;border-bottom:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 0 6px 0}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:var(--gold);opacity:.7;animation:scan 2s ease-in-out infinite}
+@keyframes scan{0%,100%{top:0}50%{top:100%}}
+.result-card{border-radius:14px;padding:20px;text-align:center;margin-top:16px}
+.result-valid{background:rgba(0,201,167,.15);border:2px solid var(--green)}
+.result-invalid{background:rgba(255,71,87,.15);border:2px solid var(--red)}
+.result-warned{background:rgba(255,165,2,.15);border:2px solid var(--orange)}
+@media(max-width:900px){.stats-grid{grid-template-columns:1fr 1fr}.grid-2{grid-template-columns:1fr}.sidebar{width:60px}.sidebar-logo .logo-text,.sidebar-logo .logo-sub,.nav-item span,.sidebar-section{display:none}.main{margin-left:60px}}
+
+body.light-mode{
+  --bg:#F0F4FA;--card:#FFFFFF;--navy:#1B3A6B;--gold:#B8922A;
+  --green:#009E80;--red:#CC3333;--orange:#B06000;
+  --sidebar:#1B3A6B;--border:rgba(0,0,0,.1);
+  --text:var(--navy);--text2:#5A6A8A;
+  --cardbg:#fff;--inputbg:rgba(27,58,107,.07);
+}
+body.light-mode .sidebar{background:#1B3A6B}
+body.light-mode .sidebar .nav-item{color:rgba(255,255,255,.7)}
+body.light-mode .sidebar .nav-item.active{background:rgba(201,168,76,.25);color:#C9A84C}
+body.light-mode .sidebar .nav-item:hover{background:rgba(255,255,255,.12);color:#fff}
+body.light-mode .sidebar-logo .logo-text,
+body.light-mode .sidebar-logo .logo-sub,
+body.light-mode .sidebar-section{color:rgba(255,255,255,.7)}
+body.light-mode .topbar{background:#fff;border-bottom:1px solid rgba(0,0,0,.1)}
+body.light-mode .stat-card{background:#fff;border-color:rgba(0,0,0,.08)}
+body.light-mode .card{background:#fff;border-color:rgba(0,0,0,.08)}
+body.light-mode .stat-val{color:#1A1A2E}
+body.light-mode .table td{color:#1A1A2E}
+body.light-mode .table th{color:#5A6A8A}
+body.light-mode .table tr:hover td{background:rgba(27,58,107,.04)}
+body.light-mode .input{background:rgba(27,58,107,.07);border-color:rgba(27,58,107,.2);color:#1A1A2E}
+body.light-mode .input::placeholder{color:#8899BB}
+body.light-mode .modal .modal{background:#fff}
+body.light-mode .page-title{color:#1A1A2E}
+body.light-mode .time-badge{background:rgba(27,58,107,.08);border-color:rgba(27,58,107,.2);color:#5A6A8A}
+body.light-mode .theme-toggle{background:rgba(27,58,107,.08);border-color:rgba(27,58,107,.2);color:#5A6A8A}
+body.light-mode .donut-hole{background:#fff;color:#1A1A2E}
+body.light-mode .scan-box{background:rgba(27,58,107,.06);border-color:rgba(27,58,107,.2)}
+</style>
+</head>
+<body>
+<div class="toast hidden" id="toast"></div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" id="modalTitle">Add New Schedule</div>
+      <button style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <svg width="36" height="36" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="cgadm" cx="50%" cy="38%" r="58%">
+      <stop offset="0%" style="stop-color:#F0D080"/>
+      <stop offset="100%" style="stop-color:#C9A84C"/>
+    </radialGradient>
+    <radialGradient id="ggadm" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#C9A84C;stop-opacity:.3"/>
+      <stop offset="100%" style="stop-color:#C9A84C;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="100" cy="100" r="92" fill="url(#ggadm)"/>
+  <circle cx="100" cy="100" r="64" fill="url(#cgadm)"/>
+  <path d="M100 50 C87 50 76 61 76 73 C76 90 100 112 100 112 C100 112 124 90 124 73 C124 61 113 50 100 50Z" fill="#0A1628"/>
+  <circle cx="100" cy="72" r="9" fill="#C9A84C"/>
+  <rect x="74" y="116" width="52" height="22" rx="5" fill="#0A1628"/>
+  <rect x="79" y="120" width="10" height="7" rx="2" fill="#C9A84C" opacity=".9"/>
+  <rect x="93" y="120" width="10" height="7" rx="2" fill="#C9A84C" opacity=".9"/>
+  <rect x="107" y="120" width="10" height="7" rx="2" fill="#C9A84C" opacity=".9"/>
+  <rect x="118" y="117" width="8" height="19" rx="3" fill="#C9A84C" opacity=".35"/>
+  <rect x="74" y="117" width="8" height="19" rx="3" fill="#C9A84C" opacity=".35"/>
+  <circle cx="85" cy="140" r="4.5" fill="#0A1628"/>
+  <circle cx="85" cy="140" r="2" fill="#C9A84C"/>
+  <circle cx="115" cy="140" r="4.5" fill="#0A1628"/>
+  <circle cx="115" cy="140" r="2" fill="#C9A84C"/>
+</svg>
+    <div class="logo-text">TransitHub</div>
+    <div class="logo-sub">ADMIN PANEL</div>
+  </div>
+
+  <div class="sidebar-section">Overview</div>
+  <div class="nav-item active" onclick="showPage('dashboard',this)"><div class="icon">📊</div><span>Dashboard</span></div>
+  <div class="nav-item" onclick="showPage('bookings',this)"><div class="icon">🎫</div><span>Bookings</span></div>
+  <div class="nav-item" onclick="showPage('schedules',this)"><div class="icon">🕐</div><span>Schedules</span></div>
+  <div class="nav-item" onclick="showPage('routes',this)"><div class="icon">🗺️</div><span>Routes</span></div>
+
+  <div class="sidebar-section">Fleet</div>
+  <div class="nav-item" onclick="showPage('buses',this)"><div class="icon">🚌</div><span>Buses</span></div>
+  <div class="nav-item" onclick="showPage('drivers',this)"><div class="icon">👤</div><span>Drivers</span></div>
+
+  <div class="sidebar-section">People</div>
+  <div class="nav-item" onclick="showPage('passengers',this)"><div class="icon">👥</div><span>Passengers</span></div>
+  <div class="nav-item" onclick="showPage('staff',this)"><div class="icon">🏢</div><span>Staff & Roles</span></div>
+
+  <div class="sidebar-section">Finance</div>
+  <div class="nav-item" onclick="showPage('revenue',this)"><div class="icon">💰</div><span>Revenue</span></div>
+  <div class="nav-item" onclick="showPage('payments',this)"><div class="icon">💳</div><span>Payments</span></div>
+
+  <div class="sidebar-section">Operations</div>
+  <div class="nav-item" onclick="showPage('scan',this)"><div class="icon">📷</div><span>QR Scanner</span></div>
+  <div class="nav-item" onclick="showPage('notifications',this)"><div class="icon">🔔</div><span>Send Alerts</span></div>
+  <div class="nav-item" onclick="showPage('settings',this)"><div class="icon">⚙️</div><span>Settings</span></div>
+
+  <div style="margin-top:auto;padding:16px 8px;border-top:1px solid rgba(255,255,255,.1)">
+    <div class="nav-item" style="color:var(--red)" onclick="logout()"><div class="icon">🚪</div><span>Sign Out</span></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="page-title" id="pageTitle">Dashboard</div>
+    <div class="topbar-right">
+      <div class="time-badge" id="liveClock">Loading...</div>
+      <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙 Dark</button>
+      <div style="font-size:12px;color:var(--text2)">Admin</div>
+      <div class="avatar" onclick="showPage('settings',null)">AD</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(201,168,76,.15)">🎫</div>
+          <div class="stat-val" id="statBookings">247</div>
+          <div class="stat-label">Total Bookings Today</div>
+          <div class="stat-change up">↑ 12% from yesterday</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(0,201,167,.15)">💰</div>
+          <div class="stat-val" style="color:var(--gold)" id="statRevenue">GHS 21,890</div>
+          <div class="stat-label">Revenue Today</div>
+          <div class="stat-change up">↑ 8% from yesterday</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(27,58,107,.4)">🚌</div>
+          <div class="stat-val" id="statBuses">18</div>
+          <div class="stat-label">Active Buses</div>
+          <div class="stat-change" style="color:var(--text2)">3 en route, 15 at station</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(255,71,87,.15)">❌</div>
+          <div class="stat-val" style="color:var(--red)" id="statCancelled">14</div>
+          <div class="stat-label">Cancellations Today</div>
+          <div class="stat-change down">↑ 3 from yesterday</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Weekly Bookings <span style="font-size:12px;color:var(--text2)">This week</span></div>
+          <div class="bar-chart" id="barChart"></div>
+          <div style="display:flex;gap:0" id="barLabels"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Booking Breakdown</div>
+          <div class="donut"><div class="donut-hole">247</div></div>
+          <div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Regular — 182 bookings (64%)</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Executive — 52 bookings (22%)</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Cancelled — 13 bookings (5%)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Top Routes Today</div>
+          <table class="table">
+            <thead><tr><th>Route</th><th>Bookings</th><th>Revenue</th></tr></thead>
+            <tbody>
+              <tr><td>Kumasi → Accra</td><td>89</td><td style="color:var(--gold)">GHS 7,385</td></tr>
+              <tr><td>Accra → Tamale</td><td>42</td><td style="color:var(--gold)">GHS 5,250</td></tr>
+              <tr><td>Accra → Bolga</td><td>31</td><td style="color:var(--gold)">GHS 4,340</td></tr>
+              <tr><td>Accra → Cape Coast</td><td>28</td><td style="color:var(--gold)">GHS 1,400</td></tr>
+              <tr><td>Kumasi → Tamale</td><td>21</td><td style="color:var(--gold)">GHS 2,100</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">Payment Methods</div>
+          <div id="payBreakdown">
+            <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>MTN MoMo</span><span style="color:var(--gold)">148 (60%)</span></div><div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div></div>
+            <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Telecel Cash</span><span style="color:var(--gold)">42 (17%)</span></div><div class="progress-bar"><div class="progress-fill" style="width:17%;background:var(--green)"></div></div></div>
+            <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>AirtelTigo Money</span><span style="color:var(--gold)">28 (11%)</span></div><div class="progress-bar"><div class="progress-fill" style="width:11%;background:var(--orange)"></div></div></div>
+            <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Visa / Mastercard</span><span style="color:var(--gold)">18 (7%)</span></div><div class="progress-bar"><div class="progress-fill" style="width:7%;background:#7C3AED"></div></div></div>
+            <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Ghanaian Banks</span><span style="color:var(--gold)">11 (5%)</span></div><div class="progress-bar"><div class="progress-fill" style="width:5%;background:#2563EB"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Recent Bookings <button class="btn btn-sm btn-outline" onclick="showPage('bookings',null)">View All</button></div>
+        <table class="table">
+          <thead><tr><th>Booking ID</th><th>Passenger</th><th>Route</th><th>Class</th><th>Amount</th><th>Payment</th><th>Status</th><th>Time</th></tr></thead>
+          <tbody id="recentBookings"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BOOKINGS -->
+    <div class="page" id="page-bookings">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="display:flex;gap:8px">
+          <input class="input" placeholder="🔍 Search bookings..." style="width:220px;margin:0" oninput="filterBookings(this.value)"/>
+          <select class="input" style="width:140px;margin:0" onchange="filterBookingStatus(this.value)">
+            <option value="">All Status</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="pending">Pending</option>
+          </select>
+          <select class="input" style="width:140px;margin:0">
+            <option>All Routes</option>
+            <option>Kumasi → Accra</option>
+            <option>Accra → Tamale</option>
+            <option>Accra → Bolga</option>
+          </select>
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="exportBookings()">📥 Export CSV</button>
+      </div>
+      <div class="card">
+        <div class="tab-row">
+          <button class="tab active" onclick="filterBookingTab('all',this)">All (247)</button>
+          <button class="tab" onclick="filterBookingTab('confirmed',this)">Confirmed (220)</button>
+          <button class="tab" onclick="filterBookingTab('cancelled',this)">Cancelled (14)</button>
+          <button class="tab" onclick="filterBookingTab('pending',this)">Pending (13)</button>
+        </div>
+        <table class="table">
+          <thead><tr><th>Booking ID</th><th>Passenger</th><th>Route</th><th>Seat</th><th>Class</th><th>Amount</th><th>Payment</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="bookingsTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SCHEDULES -->
+    <div class="page" id="page-schedules">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="display:flex;gap:8px">
+          <input class="input" placeholder="🔍 Search schedules..." style="width:220px;margin:0"/>
+          <select class="input" style="width:160px;margin:0">
+            <option>All Operators</option>
+            <option>VIP Bus Service</option>
+            <option>STC</option>
+            <option>GPRTU</option>
+            <option>OA Travel</option>
+            <option>Kingdom Transport</option>
+            <option>Dreamway Transport</option>
+            <option>Metro Mass Transit</option>
+            <option>Intercity STC</option>
+            <option>Neoplan Ghana</option>
+          </select>
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="openScheduleModal()">+ Add Schedule</button>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Route</th><th>Operator</th><th>Bus</th><th>Departs</th><th>Arrives</th><th>Class</th><th>Seats</th><th>Booked</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="schedulesTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ROUTES -->
+    <div class="page" id="page-routes">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-size:14px;color:var(--text2)">Manage all available routes and pricing</div>
+        <button class="btn btn-gold btn-sm" onclick="openRouteModal()">+ Add Route</button>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Origin</th><th>Destination</th><th>Regular Price</th><th>Executive Price</th><th>Distance</th><th>Duration</th><th>Active</th><th>Action</th></tr></thead>
+          <tbody id="routesTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BUSES -->
+    <div class="page" id="page-buses">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-size:14px;color:var(--text2)">Fleet management — all registered buses</div>
+        <button class="btn btn-gold btn-sm" onclick="openBusModal()">+ Add Bus</button>
+      </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(0,201,167,.15)">✅</div><div class="stat-val">18</div><div class="stat-label">Active Buses</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(255,165,2,.15)">🔧</div><div class="stat-val">3</div><div class="stat-label">In Maintenance</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(201,168,76,.15)">⭐</div><div class="stat-val">8</div><div class="stat-label">Executive Buses</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(27,58,107,.4)">🚌</div><div class="stat-val">21</div><div class="stat-label">Total Fleet</div></div>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Plate</th><th>Operator</th><th>Model</th><th>Class</th><th>Capacity</th><th>Route</th><th>Driver</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="busesTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DRIVERS -->
+    <div class="page" id="page-drivers">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <input class="input" placeholder="🔍 Search drivers..." style="width:240px;margin:0"/>
+        <button class="btn btn-gold btn-sm" onclick="openDriverModal()">+ Add Driver</button>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Driver</th><th>Phone</th><th>Operator</th><th>License</th><th>Trips Today</th><th>Rating</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="driversTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PASSENGERS -->
+    <div class="page" id="page-passengers">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <input class="input" placeholder="🔍 Search passengers..." style="width:240px;margin:0"/>
+        <div style="font-size:13px;color:var(--text2)">Total: <strong style="color:var(--text)">1,284</strong> registered</div>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Passenger</th><th>Email</th><th>Phone</th><th>Total Trips</th><th>Last Booking</th><th>Total Spent</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="passengersTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- STAFF -->
+    <div class="page" id="page-staff">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-size:14px;color:var(--text2)">Manage admin staff and roles</div>
+        <button class="btn btn-gold btn-sm" onclick="openStaffModal()">+ Add Staff</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon">👑</div><div class="stat-val">2</div><div class="stat-label">Super Admins</div></div>
+        <div class="stat-card"><div class="stat-icon">🏢</div><div class="stat-val">6</div><div class="stat-label">Managers</div></div>
+        <div class="stat-card"><div class="stat-icon">🎫</div><div class="stat-val">12</div><div class="stat-label">Operators</div></div>
+        <div class="stat-card"><div class="stat-icon">📷</div><div class="stat-val">28</div><div class="stat-label">Conductors</div></div>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Company</th><th>Last Login</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="staffTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- REVENUE -->
+    <div class="page" id="page-revenue">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(201,168,76,.15)">💰</div><div class="stat-val" style="color:var(--gold)">GHS 21,890</div><div class="stat-label">Today's Revenue</div><div class="stat-change up">↑ 8%</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(0,201,167,.15)">📈</div><div class="stat-val" style="color:var(--gold)">GHS 134,200</div><div class="stat-label">This Week</div><div class="stat-change up">↑ 15%</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(27,58,107,.4)">📊</div><div class="stat-val" style="color:var(--gold)">GHS 489,600</div><div class="stat-label">This Month</div><div class="stat-change up">↑ 22%</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(201,168,76,.15)">🏆</div><div class="stat-val" style="color:var(--gold)">GHS 2.1M</div><div class="stat-label">This Year</div><div class="stat-change up">↑ 34%</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Revenue by Route</div>
+          <table class="table">
+            <thead><tr><th>Route</th><th>Bookings</th><th>Revenue</th><th>Share</th></tr></thead>
+            <tbody>
+              <tr><td>Kumasi → Accra</td><td>89</td><td style="color:var(--gold)">GHS 7,385</td><td><div class="progress-bar"><div class="progress-fill" style="width:34%"></div></div></td></tr>
+              <tr><td>Accra → Tamale</td><td>42</td><td style="color:var(--gold)">GHS 5,250</td><td><div class="progress-bar"><div class="progress-fill" style="width:24%"></div></div></td></tr>
+              <tr><td>Accra → Bolga</td><td>31</td><td style="color:var(--gold)">GHS 4,340</td><td><div class="progress-bar"><div class="progress-fill" style="width:20%"></div></div></td></tr>
+              <tr><td>Accra → Cape Coast</td><td>28</td><td style="color:var(--gold)">GHS 1,400</td><td><div class="progress-bar"><div class="progress-fill" style="width:6%"></div></div></td></tr>
+              <tr><td>Others</td><td>57</td><td style="color:var(--gold)">GHS 3,515</td><td><div class="progress-bar"><div class="progress-fill" style="width:16%"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">Convenience Fee Revenue</div>
+          <div style="text-align:center;padding:24px 0">
+            <div style="font-size:48px;font-weight:700;color:var(--gold);margin-bottom:8px">GHS 741</div>
+            <div style="font-size:13px;color:var(--text2)">GHS 3 × 247 bookings today</div>
+            <div style="margin-top:24px;font-size:13px;color:var(--text2)">Monthly projection</div>
+            <div style="font-size:28px;font-weight:500;color:var(--gold);margin-top:4px">GHS 22,230</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div class="page" id="page-payments">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Payment Transactions</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <input class="input" placeholder="🔍 Search by reference..." style="width:220px;margin:0"/>
+          <select class="input" style="width:160px;margin:0">
+            <option>All Methods</option>
+            <option>MTN MoMo</option>
+            <option>Telecel Cash</option>
+            <option>AirtelTigo</option>
+            <option>Visa</option>
+            <option>Mastercard</option>
+            <option>GCB Bank</option>
+            <option>Ecobank</option>
+          </select>
+          <select class="input" style="width:140px;margin:0">
+            <option>All Status</option>
+            <option>Success</option>
+            <option>Failed</option>
+            <option>Pending</option>
+          </select>
+        </div>
+        <table class="table">
+          <thead><tr><th>Reference</th><th>Passenger</th><th>Amount</th><th>Method</th><th>Booking ID</th><th>Status</th><th>Time</th></tr></thead>
+          <tbody id="paymentsTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- QR SCANNER -->
+    <div class="page" id="page-scan">
+      <div class="grid-2">
+        <div class="card" style="text-align:center">
+          <div class="card-title" style="justify-content:center">QR Ticket Scanner</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Click scan to verify a passenger ticket</div>
+          <div class="scan-box" onclick="doScan()">
+            📷
+            <div class="scan-corner tl"></div>
+            <div class="scan-corner tr"></div>
+            <div class="scan-corner bl"></div>
+            <div class="scan-corner br"></div>
+            <div class="scan-line"></div>
+          </div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Today's Route: <strong style="color:var(--text)">Kumasi → Accra, 06:00 AM</strong></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <button class="btn btn-gold" onclick="simulateScan('valid')">✓ Valid Ticket</button>
+            <button class="btn btn-red" onclick="simulateScan('invalid')">✗ Invalid QR</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button class="btn" style="background:var(--orange);color:#020E1A" onclick="simulateScan('scanned')">⚠ Already Scanned</button>
+            <button class="btn" style="background:var(--gray);color:#fff" onclick="simulateScan('cancelled')">⊘ Cancelled</button>
+          </div>
+          <div id="scanResult" style="margin-top:16px"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Scan Log — Today</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Total scanned: <strong style="color:var(--gold)" id="totalScanned">0</strong> passengers</div>
+          <div id="scanLog" style="max-height:400px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="page" id="page-notifications">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Send Push Notification</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Send alerts to passengers about route changes, delays, or promotions.</div>
+          <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Target Audience</label>
+          <select class="input">
+            <option>All Passengers</option>
+            <option>Passengers on Kumasi → Accra today</option>
+            <option>Passengers on Accra → Tamale today</option>
+            <option>Passengers with upcoming bookings</option>
+            <option>All registered users</option>
+          </select>
+          <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Notification Type</label>
+          <select class="input" id="notiType">
+            <option>📢 General Announcement</option>
+            <option>⚠️ Route Delay</option>
+            <option>✅ Departure Reminder</option>
+            <option>❌ Route Cancellation</option>
+            <option>🎉 Promotion</option>
+          </select>
+          <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Title</label>
+          <input class="input" placeholder="Notification title" id="notiTitle"/>
+          <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Message</label>
+          <textarea class="input" rows="4" placeholder="Write your message here..." id="notiMsg" style="resize:none"></textarea>
+          <button class="btn btn-gold" onclick="sendNotification()" style="width:100%">Send Notification 📤</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Notification History</div>
+          <div id="notiHistory">
+            <div style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:500;color:var(--text)">Route Delay — Kumasi → Accra</div><div style="font-size:12px;color:var(--text2);margin:4px 0">The 06:00 AM departure is delayed by 30 minutes due to traffic.</div><div style="display:flex;justify-content:space-between"><span class="badge badge-orange">Route Delay</span><span style="font-size:11px;color:var(--text2)">Today, 05:30 AM · 89 recipients</span></div></div>
+            <div style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:500;color:var(--text)">Departure Reminder</div><div style="font-size:12px;color:var(--text2);margin:4px 0">Your bus to Accra departs in 1 hour. Please head to the station now.</div><div style="display:flex;justify-content:space-between"><span class="badge badge-green">Reminder</span><span style="font-size:11px;color:var(--text2)">Today, 05:00 AM · 247 recipients</span></div></div>
+            <div style="padding:12px 0"><div style="font-size:13px;font-weight:500;color:var(--text)">Weekend Promo — 10% off Executive</div><div style="font-size:12px;color:var(--text2);margin:4px 0">Book any Executive seat this weekend and get 10% off. Use code EXEC10.</div><div style="display:flex;justify-content:space-between"><span class="badge badge-gold">Promotion</span><span style="font-size:11px;color:var(--text2)">Yesterday · 1,284 recipients</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Admin Profile</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+            <div style="width:56px;height:56px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#020E1A">AD</div>
+            <div><div style="font-size:16px;font-weight:500;color:var(--text)">Admin User</div><div style="font-size:13px;color:var(--text2)">admin@transithub.com</div><span class="badge badge-gold">Super Admin</span></div>
+          </div>
+          <input class="input" value="Admin User" placeholder="Full Name"/>
+          <input class="input" value="admin@transithub.com" placeholder="Email"/>
+          <input class="input" type="password" placeholder="New Password"/>
+          <button class="btn btn-gold" onclick="showToast('Profile updated successfully!','green')">Save Changes</button>
+        </div>
+        <div class="card">
+          <div class="card-title">App Settings</div>
+          <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px;color:var(--text)">Dark Mode</div><div style="font-size:12px;color:var(--text2)">Toggle dark/light theme</div></div><button class="btn btn-sm btn-outline" onclick="toggleTheme()" id="settingsThemeBtn">Toggle</button></div>
+          <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px;color:var(--text)">Convenience Fee</div><div style="font-size:12px;color:var(--text2)">Charged per booking</div></div><div style="font-size:14px;font-weight:500;color:var(--gold)">GHS 3.00</div></div>
+          <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px;color:var(--text)">Advance Booking Window</div><div style="font-size:12px;color:var(--text2)">Days ahead passengers can book</div></div><div style="font-size:14px;font-weight:500;color:var(--gold)">30 days</div></div>
+          <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px;color:var(--text)">Payment Gateway</div><div style="font-size:12px;color:var(--text2)">Current processor</div></div><div style="font-size:14px;font-weight:500;color:var(--gold)">Paystack</div></div>
+          <div style="padding:12px 0;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px;color:var(--text)">App Version</div><div style="font-size:12px;color:var(--text2)">Current build</div></div><div style="font-size:13px;color:var(--text2)">v1.0.0</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// DATA
+const bookingData=[
+  {id:'THB001',p:'Michael Mensah',route:'Kumasi → Accra',seat:12,cls:'Regular',amt:'GHS 83',pay:'MTN MoMo',status:'confirmed',time:'06:12 AM'},
+  {id:'THB002',p:'Abena Osei',route:'Accra → Tamale',seat:5,cls:'Executive',amt:'GHS 203',pay:'Telecel Cash',status:'confirmed',time:'06:45 AM'},
+  {id:'THB003',p:'Kwame Asante',route:'Accra → Bolga',seat:22,cls:'Regular',amt:'GHS 143',pay:'Visa',status:'confirmed',time:'07:02 AM'},
+  {id:'THB004',p:'Ama Boateng',route:'Accra → WA',seat:8,cls:'Executive',amt:'GHS 213',pay:'GCB Bank',status:'cancelled',time:'07:30 AM'},
+  {id:'THB005',p:'Kofi Mensah',route:'Kumasi → Tamale',seat:17,cls:'Regular',amt:'GHS 103',pay:'AirtelTigo',status:'confirmed',time:'08:00 AM'},
+  {id:'THB006',p:'Efua Darko',route:'Accra → Cape Coast',seat:3,cls:'Regular',amt:'GHS 53',pay:'MTN MoMo',status:'confirmed',time:'08:15 AM'},
+  {id:'THB007',p:'Yaw Asiedu',route:'Accra → Sunyani',seat:11,cls:'Executive',amt:'GHS 163',pay:'Mastercard',status:'pending',time:'08:40 AM'},
+  {id:'THB008',p:'Adwoa Frimpong',route:'Kumasi → Accra',seat:34,cls:'Regular',amt:'GHS 83',pay:'MTN MoMo',status:'confirmed',time:'09:00 AM'},
+];
+
+const scheduleData=[
+  {route:'Kumasi → Accra',op:'VIP Bus Service',bus:'GR-1234-22',dep:'05:00 AM',arr:'10:30 AM',cls:'Regular',seats:45,booked:33,status:'active'},
+  {route:'Kumasi → Accra',op:'VIP Jeoun Executive',bus:'GR-5678-22',dep:'06:00 AM',arr:'10:30 AM',cls:'Executive',seats:30,booked:24,status:'active'},
+  {route:'Accra → Tamale',op:'STC',bus:'GR-9012-21',dep:'07:00 AM',arr:'01:00 PM',cls:'Regular',seats:45,booked:18,status:'active'},
+  {route:'Accra → Tamale',op:'STC Luxury',bus:'GR-3456-23',dep:'08:00 AM',arr:'12:30 PM',cls:'Executive',seats:30,booked:4,status:'active'},
+  {route:'Accra → Bolga',op:'GPRTU',bus:'GR-7890-20',dep:'06:30 AM',arr:'01:00 PM',cls:'Regular',seats:45,booked:31,status:'active'},
+  {route:'Accra → WA',op:'OA Travel',bus:'GR-2345-22',dep:'07:30 AM',arr:'02:00 PM',cls:'Regular',seats:45,booked:22,status:'active'},
+  {route:'Accra → Cape Coast',op:'Metro Mass Transit',bus:'GR-6789-21',dep:'08:00 AM',arr:'10:00 AM',cls:'Regular',seats:60,booked:41,status:'active'},
+  {route:'Kumasi → Tamale',op:'Kingdom Transport',bus:'GR-0123-23',dep:'09:00 AM',arr:'03:00 PM',cls:'Executive',seats:30,booked:14,status:'delayed'},
+  {route:'Accra → Sunyani',op:'Dreamway Transport',bus:'GR-4567-22',dep:'10:00 AM',arr:'03:30 PM',cls:'Regular',seats:45,booked:9,status:'active'},
+  {route:'Accra → Navrongo',op:'Intercity STC',bus:'GR-8901-21',dep:'06:00 AM',arr:'02:00 PM',cls:'Regular',seats:45,booked:38,status:'departed'},
+];
+
+const routeData=[
+  {from:'Kumasi',to:'Accra',reg:80,exec:150,dist:'250km',dur:'5h 30m',active:true},
+  {from:'Accra',to:'Tamale',reg:120,exec:200,dist:'400km',dur:'6h 00m',active:true},
+  {from:'Accra',to:'Bolga',reg:140,exec:220,dist:'500km',dur:'7h 00m',active:true},
+  {from:'Accra',to:'WA',reg:130,exec:210,dist:'470km',dur:'6h 30m',active:true},
+  {from:'Kumasi',to:'Tamale',reg:100,exec:180,dist:'380km',dur:'5h 30m',active:true},
+  {from:'Accra',to:'Takoradi',reg:60,exec:120,dist:'220km',dur:'3h 00m',active:true},
+  {from:'Accra',to:'Cape Coast',reg:50,exec:100,dist:'150km',dur:'2h 00m',active:true},
+  {from:'Accra',to:'Sunyani',reg:90,exec:160,dist:'320km',dur:'4h 30m',active:true},
+  {from:'Accra',to:'Techiman',reg:95,exec:165,dist:'340km',dur:'4h 45m',active:true},
+  {from:'Accra',to:'Navrongo',reg:150,exec:230,dist:'550km',dur:'8h 00m',active:false},
+];
+
+const busData=[
+  {plate:'GR-1234-22',op:'VIP Bus Service',model:'Hyundai Universe',cls:'Regular',cap:45,route:'Kumasi → Accra',driver:'Kofi Agyemang',status:'active'},
+  {plate:'GR-5678-22',op:'VIP Jeoun Executive',model:'Volvo 9700',cls:'Executive',cap:30,route:'Kumasi → Accra',driver:'Yaw Mensah',status:'active'},
+  {plate:'GR-9012-21',op:'STC',model:'Mercedes Tourismo',cls:'Regular',cap:45,route:'Accra → Tamale',driver:'Kweku Asante',status:'active'},
+  {plate:'GR-3456-23',op:'STC Luxury',model:'Setra S 517 HD',cls:'Executive',cap:30,route:'Accra → Tamale',driver:'Ato Darko',status:'active'},
+  {plate:'GR-7890-20',op:'GPRTU',model:'Yutong ZK6122H',cls:'Regular',cap:45,route:'Accra → Bolga',driver:'Fiifi Boateng',status:'maintenance'},
+  {plate:'GR-2345-22',op:'OA Travel',model:'Golden Dragon XML6129',cls:'Regular',cap:45,route:'Accra → WA',driver:'Nana Osei',status:'active'},
+  {plate:'GR-6789-21',op:'Metro Mass Transit',model:'Ashok Leyland Viking',cls:'Regular',cap:60,route:'Accra → Cape Coast',driver:'Akua Frimpong',status:'active'},
+  {plate:'GR-0123-23',op:'Kingdom Transport',model:'Scania Touring HD',cls:'Executive',cap:30,route:'Kumasi → Tamale',driver:'Kojo Appiah',status:'active'},
+  {plate:'GR-4567-22',op:'Dreamway Transport',model:'Neoplan Starliner',cls:'Executive',cap:30,route:'Accra → Sunyani',driver:'Ama Bonsu',status:'active'},
+  {plate:'GR-8901-21',op:'Intercity STC',model:'DAF Citaz',cls:'Regular',cap:45,route:'Accra → Navrongo',driver:'Kwame Asiedu',status:'active'},
+  {plate:'GR-1357-22',op:'Neoplan Ghana',model:'Neoplan Tourliner',cls:'Executive',cap:28,route:'Accra → Takoradi',driver:'Efua Mensah',status:'maintenance'},
+];
+
+const driverData=[
+  {name:'Kofi Agyemang',phone:'+233 24 111 2222',op:'VIP Bus Service',lic:'DRV-2021-001',trips:4,rating:'4.9 ⭐',status:'on-duty'},
+  {name:'Yaw Mensah',phone:'+233 20 333 4444',op:'VIP Jeoun Exec',lic:'DRV-2020-002',trips:3,rating:'4.8 ⭐',status:'on-duty'},
+  {name:'Kweku Asante',phone:'+233 24 555 6666',op:'STC',lic:'DRV-2019-003',trips:5,rating:'4.7 ⭐',status:'on-duty'},
+  {name:'Ato Darko',phone:'+233 55 777 8888',op:'STC Luxury',lic:'DRV-2022-004',trips:3,rating:'4.9 ⭐',status:'on-duty'},
+  {name:'Fiifi Boateng',phone:'+233 26 999 0000',op:'GPRTU',lic:'DRV-2018-005',trips:0,rating:'4.6 ⭐',status:'off-duty'},
+  {name:'Nana Osei',phone:'+233 24 121 3141',op:'OA Travel',lic:'DRV-2021-006',trips:3,rating:'4.8 ⭐',status:'on-duty'},
+];
+
+const passengerData=[
+  {name:'Michael Mensah',email:'michael@email.com',phone:'+233 24 123 4567',trips:12,last:'25 May 2025',spent:'GHS 996',status:'active'},
+  {name:'Abena Osei',email:'abena@email.com',phone:'+233 20 234 5678',trips:8,last:'24 May 2025',spent:'GHS 664',status:'active'},
+  {name:'Kwame Asante',email:'kwame@email.com',phone:'+233 24 345 6789',trips:15,last:'25 May 2025',spent:'GHS 1,245',status:'active'},
+  {name:'Ama Boateng',email:'ama@email.com',phone:'+233 55 456 7890',trips:3,last:'24 May 2025',spent:'GHS 249',status:'active'},
+  {name:'Kofi Mensah',email:'kofim@email.com',phone:'+233 26 567 8901',trips:22,last:'25 May 2025',spent:'GHS 1,826',status:'active'},
+  {name:'Efua Darko',email:'efua@email.com',phone:'+233 24 678 9012',trips:6,last:'22 May 2025',spent:'GHS 498',status:'inactive'},
+  {name:'Yaw Asiedu',email:'yaw@email.com',phone:'+233 20 789 0123',trips:4,last:'25 May 2025',spent:'GHS 332',status:'active'},
+];
+
+const staffData=[
+  {name:'Admin User',email:'admin@transithub.com',role:'Super Admin',company:'TransitHub HQ',last:'Today, 08:00 AM',status:'active'},
+  {name:'Sarah Owusu',email:'sarah@transithub.com',role:'Manager',company:'TransitHub HQ',last:'Today, 07:30 AM',status:'active'},
+  {name:'Ben Quartey',email:'ben@vipbus.com',role:'Operator',company:'VIP Bus Service',last:'Today, 06:00 AM',status:'active'},
+  {name:'Grace Appiah',email:'grace@stc.com',role:'Operator',company:'STC',last:'Today, 07:00 AM',status:'active'},
+  {name:'Emmanuel Asare',email:'emma@transithub.com',role:'Conductor',company:'VIP Bus Service',last:'Today, 05:45 AM',status:'active'},
+  {name:'Joyce Adu',email:'joyce@transithub.com',role:'Conductor',company:'Metro Mass Transit',last:'Yesterday',status:'inactive'},
+];
+
+const paymentData=[
+  {ref:'PSK-20250525-001',p:'Michael Mensah',amt:'GHS 83.00',method:'MTN MoMo',bid:'THB001',status:'success',time:'06:12 AM'},
+  {ref:'PSK-20250525-002',p:'Abena Osei',amt:'GHS 203.00',method:'Telecel Cash',bid:'THB002',status:'success',time:'06:45 AM'},
+  {ref:'PSK-20250525-003',p:'Kwame Asante',amt:'GHS 143.00',method:'Visa',bid:'THB003',status:'success',time:'07:02 AM'},
+  {ref:'PSK-20250525-004',p:'Ama Boateng',amt:'GHS 213.00',method:'GCB Bank',bid:'THB004',status:'failed',time:'07:30 AM'},
+  {ref:'PSK-20250525-005',p:'Kofi Mensah',amt:'GHS 103.00',method:'AirtelTigo',bid:'THB005',status:'success',time:'08:00 AM'},
+  {ref:'PSK-20250525-006',p:'Efua Darko',amt:'GHS 53.00',method:'MTN MoMo',bid:'THB006',status:'success',time:'08:15 AM'},
+  {ref:'PSK-20250525-007',p:'Yaw Asiedu',amt:'GHS 163.00',method:'Mastercard',bid:'THB007',status:'pending',time:'08:40 AM'},
+];
+
+let isDark = localStorage.getItem('th_theme') !== 'light';
+if(!isDark){document.body.classList.add('light-mode');}
+function applyTheme(){
+  const t=localStorage.getItem('th_theme')||'dark';
+  isDark=t==='dark';
+  document.body.classList.toggle('light',!isDark);
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.textContent=isDark?'🌙 Dark':'☀️ Light';
+  const sbtn=document.getElementById('settingsThemeBtn');
+  if(sbtn)sbtn.textContent=isDark?'Switch to Light':'Switch to Dark';
+}
+let scanCount=0;
+const scanLogs=[];
+
+function showToast(msg,type='green'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast'+(type==='red'?' red':'');
+  setTimeout(()=>t.classList.add('hidden'),3000);
+}
+
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const titles={dashboard:'Dashboard',bookings:'Bookings',schedules:'Schedules',routes:'Routes',buses:'Fleet Management',drivers:'Drivers',passengers:'Passengers',staff:'Staff & Roles',revenue:'Revenue Analytics',payments:'Payment Transactions',scan:'QR Scanner',notifications:'Send Notifications',settings:'Settings'};
+  document.getElementById('pageTitle').textContent=titles[id]||id;
+  if(id==='bookings')renderBookings();
+  if(id==='schedules')renderSchedules();
+  if(id==='routes')renderRoutes();
+  if(id==='buses')renderBuses();
+  if(id==='drivers')renderDrivers();
+  if(id==='passengers')renderPassengers();
+  if(id==='staff')renderStaff();
+  if(id==='payments')renderPayments();
+}
+
+(function(){
+  const saved=localStorage.getItem('th_theme');
+  if(saved==='light'){
+    document.body.classList.add('light-mode');
+    const btn=document.getElementById('themeBtn');
+    if(btn)btn.textContent='☀️ Light';
+    const sb=document.getElementById('settingsThemeBtn');
+    if(sb)sb.textContent='Switch to Dark';
+  }
+})();
+
+function toggleTheme(){
+  isDark=!isDark;
+  document.body.classList.toggle('light',!isDark);
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.textContent=isDark?'🌙 Dark':'☀️ Light';
+  const sbtn=document.getElementById('settingsThemeBtn');
+  if(sbtn)sbtn.textContent=isDark?'Switch to Light':'Switch to Dark';
+  localStorage.setItem('th_theme',isDark?'dark':'light');
+  showToast(isDark?'Dark mode on 🌙':'Light mode on ☀️','green');
+}
+
+function liveClock(){
+  const now=new Date();
+  const options={timeZone:'Africa/Accra',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true,weekday:'short',month:'short',day:'numeric'};
+  const str=now.toLocaleString('en-GH',options);
+  document.getElementById('liveClock').textContent='🇬🇭 '+str+' GMT';
+}
+setInterval(liveClock,1000);liveClock();
+
+function renderChart(){
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const vals=[180,210,195,230,247,310,280];
+  const max=Math.max(...vals);
+  const chart=document.getElementById('barChart');
+  const labels=document.getElementById('barLabels');
+  chart.innerHTML=vals.map((v,i)=>`<div style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center"><div class="bar" style="height:${v/max*100}px;width:100%"><div class="bar-val">${v}</div></div></div>`).join('');
+  labels.innerHTML=`<div style="display:flex;gap:8px;width:100%">`+days.map(d=>`<div class="bar-label" style="flex:1">${d}</div>`).join('')+'</div>';
+}
+renderChart();
+
+function renderBookings(filter=''){
+  const data=filter?bookingData.filter(b=>b.p.toLowerCase().includes(filter)||b.route.toLowerCase().includes(filter)):bookingData;
+  document.getElementById('bookingsTable').innerHTML=data.map(b=>`<tr>
+    <td style="font-family:monospace;font-size:12px">${b.id}</td>
+    <td><div style="display:flex;align-items:center;gap:8px"><div class="user-avatar" style="background:var(--gold);font-size:11px">${b.p.split(' ').map(w=>w[0]).join('')}</div>${b.p}</div></td>
+    <td>${b.route}</td><td>${b.seat}</td>
+    <td><span class="badge ${b.cls==='Executive'?'badge-gold':'badge-gray'}">${b.cls}</span></td>
+    <td style="color:var(--gold)">${b.amt}</td>
+    <td><span class="badge badge-gray">${b.pay}</span></td>
+    <td><span class="badge ${b.status==='confirmed'?'badge-green':b.status==='cancelled'?'badge-red':'badge-orange'}">${b.status}</span></td>
+    <td><button class="btn btn-sm btn-outline" onclick="showToast('Booking ${b.id} details loaded','green')">View</button></td>
+  </tr>`).join('');
+  document.getElementById('recentBookings').innerHTML=bookingData.slice(0,5).map(b=>`<tr>
+    <td style="font-family:monospace;font-size:12px">${b.id}</td>
+    <td>${b.p}</td><td>${b.route}</td>
+    <td><span class="badge ${b.cls==='Executive'?'badge-gold':'badge-gray'}">${b.cls}</span></td>
+    <td style="color:var(--gold)">${b.amt}</td>
+    <td><span class="badge badge-gray">${b.pay}</span></td>
+    <td><span class="badge ${b.status==='confirmed'?'badge-green':b.status==='cancelled'?'badge-red':'badge-orange'}">${b.status}</span></td>
+    <td style="color:var(--text2);font-size:12px">${b.time}</td>
+  </tr>`).join('');
+}
+renderBookings();
+
+function filterBookings(v){renderBookings(v);}
+function filterBookingStatus(v){renderBookings(v);}
+function filterBookingTab(tab,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');}
+function exportBookings(){showToast('Exporting bookings CSV...','green');}
+
+function renderSchedules(){
+  document.getElementById('schedulesTable').innerHTML=scheduleData.map(s=>`<tr>
+    <td>${s.route}</td><td>${s.op}</td><td style="font-family:monospace;font-size:12px">${s.bus}</td>
+    <td style="color:var(--gold)">${s.dep}</td><td>${s.arr}</td>
+    <td><span class="badge ${s.cls==='Executive'?'badge-gold':'badge-gray'}">${s.cls}</span></td>
+    <td>${s.seats}</td><td>${s.booked}</td>
+    <td><span class="badge ${s.status==='active'?'badge-green':s.status==='delayed'?'badge-orange':'badge-gray'}">${s.status}</span></td>
+    <td><button class="btn btn-sm btn-outline" onclick="showToast('Schedule updated','green')">Edit</button></td>
+  </tr>`).join('');
+}
+
+function renderRoutes(){
+  document.getElementById('routesTable').innerHTML=routeData.map(r=>`<tr>
+    <td>${r.from}</td><td>${r.to}</td>
+    <td style="color:var(--gold)">GHS ${r.reg}</td><td style="color:var(--gold)">GHS ${r.exec}</td>
+    <td>${r.dist}</td><td>${r.dur}</td>
+    <td><span class="badge ${r.active?'badge-green':'badge-red'}">${r.active?'Active':'Inactive'}</span></td>
+    <td><button class="btn btn-sm btn-outline" onclick="showToast('Route updated','green')">Edit</button></td>
+  </tr>`).join('');
+}
+
+function renderBuses(){
+  document.getElementById('busesTable').innerHTML=busData.map(b=>`<tr>
+    <td style="font-family:monospace;font-size:12px">${b.plate}</td>
+    <td>${b.op}</td><td>${b.model}</td>
+    <td><span class="badge ${b.cls==='Executive'?'badge-gold':'badge-gray'}">${b.cls}</span></td>
+    <td>${b.cap}</td><td>${b.route}</td><td>${b.driver}</td>
+    <td><span class="badge ${b.status==='active'?'badge-green':'badge-orange'}">${b.status}</span></td>
+    <td><button class="btn btn-sm btn-outline" onclick="showToast('Bus record updated','green')">Edit</button></td>
+  </tr>`).join('');
+}
+
+function renderDrivers(){
+  document.getElementById('driversTable').innerHTML=driverData.map(d=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:8px"><div class="user-avatar" style="background:var(--navy);color:var(--gold);font-size:11px">${d.name.split(' ').map(w=>w[0]).join('')}</div>${d.name}</div></td>
+    <td>${d.phone}</td><td>${d.op}</td>
+    <td style="font-family:monospace;font-size:12px">${d.lic}</td>
+    <td>${d.trips}</td><td>${d.rating}</td>
+    <td><span class="badge ${d.status==='on-duty'?'badge-green':'badge-gray'}">${d.status}</span></td>
+    <td><button class="btn btn-sm btn-outline" onclick="showToast('Driver record loaded','green')">View</button></td>
+  </tr>`).join('');
+}
+
+function renderPassengers(){
+  document.getElementById('passengersTable').innerHTML=passengerData.map(p=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:8px"><div class="user-avatar" style="background:var(--gold)">${p.name.split(' ').map(w=>w[0]).join('')}</div>${p.name}</div></td>
+    <td>${p.email}</td><td>${p.phone}</td><td>${p.trips}</td>
+    <td>${p.last}</td><td style="color:var(--gold)">${p.spent}</td>
+    <td><span class="badge ${p.status==='active'?'badge-green':'badge-gray'}">${p.status}</span></td>
+    <td><button class="btn btn-sm btn-outline" onclick="showToast('Passenger profile loaded','green')">View</button></td>
+  </tr>`).join('');
+}
+
+function renderStaff(){
+  document.getElementById('staffTable').innerHTML=staffData.map(s=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:8px"><div class="user-avatar" style="background:var(--navy);color:var(--gold);font-size:11px">${s.name.split(' ').map(w=>w[0]).join('')}</div>${s.name}</div></td>
+    <td>${s.email}</td>
+    <td><span class="badge ${s.role==='Super Admin'?'badge-gold':s.role==='Manager'?'badge-green':s.role==='Operator'?'badge-orange':'badge-gray'}">${s.role}</span></td>
+    <td>${s.company}</td><td>${s.last}</td>
+    <td><span class="badge ${s.status==='active'?'badge-green':'badge-gray'}">${s.status}</span></td>
+    <td><button class="btn btn-sm btn-outline" onclick="showToast('Staff record loaded','green')">Edit</button></td>
+  </tr>`).join('');
+}
+
+function renderPayments(){
+  document.getElementById('paymentsTable').innerHTML=paymentData.map(p=>`<tr>
+    <td style="font-family:monospace;font-size:11px">${p.ref}</td>
+    <td>${p.p}</td><td style="color:var(--gold)">${p.amt}</td>
+    <td><span class="badge badge-gray">${p.method}</span></td>
+    <td style="font-family:monospace;font-size:12px">${p.bid}</td>
+    <td><span class="badge ${p.status==='success'?'badge-green':p.status==='failed'?'badge-red':'badge-orange'}">${p.status}</span></td>
+    <td style="color:var(--text2);font-size:12px">${p.time}</td>
+  </tr>`).join('');
+}
+
+function simulateScan(type){
+  scanCount++;
+  document.getElementById('totalScanned').textContent=scanCount;
+  const names=['Michael Mensah','Abena Osei','Kwame Asante','Ama Boateng','Kofi Mensah'];
+  const name=names[Math.floor(Math.random()*names.length)];
+  const seat=Math.floor(Math.random()*45)+1;
+  const time=new Date().toLocaleTimeString('en-GH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+  let html='',logEntry='';
+  if(type==='valid'){
+    html=`<div class="result-card result-valid"><div style="font-size:32px;margin-bottom:8px">✅</div><div style="font-size:18px;font-weight:700;color:var(--green);margin-bottom:8px">BOARDING APPROVED</div><div style="font-size:16px;font-weight:500;color:var(--text);margin-bottom:4px">${name}</div><div style="font-size:13px;color:var(--text2)">Seat ${seat} · Kumasi → Accra · 06:00 AM</div><div style="font-size:11px;color:var(--text2);margin-top:6px">Scanned at ${time}</div></div>`;
+    logEntry=`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span class="badge badge-green" style="margin-right:6px">✓</span><strong>${name}</strong> — Seat ${seat} — ${time}</div>`;
+  } else if(type==='invalid'){
+    html=`<div class="result-card result-invalid"><div style="font-size:32px;margin-bottom:8px">❌</div><div style="font-size:18px;font-weight:700;color:var(--red);margin-bottom:8px">INVALID TICKET</div><div style="font-size:13px;color:var(--text2)">This QR code is not recognised in the system.</div></div>`;
+    logEntry=`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span class="badge badge-red" style="margin-right:6px">✗</span><strong>Invalid QR</strong> — ${time}</div>`;
+  } else if(type==='scanned'){
+    html=`<div class="result-card result-warned"><div style="font-size:32px;margin-bottom:8px">⚠️</div><div style="font-size:18px;font-weight:700;color:var(--orange);margin-bottom:8px">ALREADY SCANNED</div><div style="font-size:13px;color:var(--text2)">This ticket was previously scanned. Contact supervisor.</div></div>`;
+    logEntry=`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span class="badge badge-orange" style="margin-right:6px">⚠</span><strong>Already Scanned</strong> — ${time}</div>`;
+  } else {
+    html=`<div class="result-card result-invalid"><div style="font-size:32px;margin-bottom:8px">⊘</div><div style="font-size:18px;font-weight:700;color:var(--red);margin-bottom:8px">TICKET CANCELLED</div><div style="font-size:13px;color:var(--text2)">This ticket was cancelled and cannot be used for boarding.</div></div>`;
+    logEntry=`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span class="badge badge-red" style="margin-right:6px">⊘</span><strong>Cancelled Ticket</strong> — ${time}</div>`;
+  }
+  document.getElementById('scanResult').innerHTML=html;
+  const log=document.getElementById('scanLog');
+  log.innerHTML=logEntry+log.innerHTML;
+  showToast(type==='valid'?'✅ Boarding approved!':type==='invalid'?'❌ Invalid ticket':type==='scanned'?'⚠️ Already scanned':'⊘ Cancelled ticket',type==='valid'?'green':'red');
+}
+
+function doScan(){showToast('Camera scanning... (use buttons below to simulate result)','green');}
+
+function sendNotification(){
+  const title=document.getElementById('notiTitle').value;
+  const msg=document.getElementById('notiMsg').value;
+  const type=document.getElementById('notiType').value;
+  if(!title||!msg){showToast('Please fill in title and message','red');return;}
+  const hist=document.getElementById('notiHistory');
+  hist.innerHTML=`<div style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:500;color:var(--text)">${title}</div><div style="font-size:12px;color:var(--text2);margin:4px 0">${msg}</div><div style="display:flex;justify-content:space-between"><span class="badge badge-green">Sent</span><span style="font-size:11px;color:var(--text2)">Just now</span></div></div>`+hist.innerHTML;
+  document.getElementById('notiTitle').value='';
+  document.getElementById('notiMsg').value='';
+  showToast('Notification sent to passengers!','green');
+}
+
+function openScheduleModal(){
+  document.getElementById('modalTitle').textContent='Add New Schedule';
+  document.getElementById('modalBody').innerHTML=`
+    <div class="form-row"><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Origin</label><select class="input"><option>Kumasi</option><option>Accra</option><option>Tamale</option></select></div><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Destination</label><select class="input"><option>Accra</option><option>Tamale</option><option>Bolga</option></select></div></div>
+    <div class="form-row"><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Operator</label><select class="input"><option>VIP Bus Service</option><option>STC</option><option>GPRTU</option><option>OA Travel</option><option>Kingdom Transport</option><option>Metro Mass Transit</option><option>Dreamway Transport</option><option>Intercity STC</option><option>Neoplan Ghana</option></select></div><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Bus Class</label><select class="input"><option>Regular</option><option>Executive</option></select></div></div>
+    <div class="form-row"><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Departure Time</label><input class="input" type="time" value="06:00"/></div><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Date</label><input class="input" type="date"/></div></div>
+    <div class="form-row"><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Bus Plate</label><input class="input" placeholder="e.g. GR-1234-22"/></div><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Seat Capacity</label><input class="input" type="number" value="45"/></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="closeModal();showToast('Schedule added successfully!','green')">Add Schedule</button>
+    </div>`;
+  document.getElementById('modal').classList.add('open');
+}
+
+function openRouteModal(){
+  document.getElementById('modalTitle').textContent='Add New Route';
+  document.getElementById('modalBody').innerHTML=`
+    <div class="form-row"><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Origin City</label><input class="input" placeholder="e.g. Kumasi"/></div><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Destination City</label><input class="input" placeholder="e.g. Accra"/></div></div>
+    <div class="form-row"><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Regular Price (GHS)</label><input class="input" type="number" placeholder="80"/></div><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Executive Price (GHS)</label><input class="input" type="number" placeholder="150"/></div></div>
+    <div class="form-row"><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Distance (km)</label><input class="input" placeholder="e.g. 250km"/></div><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Duration</label><input class="input" placeholder="e.g. 5h 30m"/></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="closeModal();showToast('Route added successfully!','green')">Add Route</button>
+    </div>`;
+  document.getElementById('modal').classList.add('open');
+}
+
+function openBusModal(){
+  document.getElementById('modalTitle').textContent='Add New Bus';
+  document.getElementById('modalBody').innerHTML=`
+    <div class="form-row"><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Plate Number</label><input class="input" placeholder="e.g. GR-1234-22"/></div><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Operator</label><select class="input"><option>VIP Bus Service</option><option>STC</option><option>GPRTU</option><option>OA Travel</option></select></div></div>
+    <div class="form-row"><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Model</label><input class="input" placeholder="e.g. Hyundai Universe"/></div><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Class</label><select class="input"><option>Regular</option><option>Executive</option></select></div></div>
+    <div class="form-row"><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Seat Capacity</label><input class="input" type="number" value="45"/></div><div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Assign Driver</label><select class="input"><option>Kofi Agyemang</option><option>Yaw Mensah</option><option>Kweku Asante</option></select></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="closeModal();showToast('Bus added to fleet!','green')">Add Bus</button>
+    </div>`;
+  document.getElementById('modal').classList.add('open');
+}
+
+function openDriverModal(){
+  document.getElementById('modalTitle').textContent='Add New Driver';
+  document.getElementById('modalBody').innerHTML=`
+    <input class="input" placeholder="Full Name"/>
+    <input class="input" placeholder="Phone Number (+233...)"/>
+    <input class="input" placeholder="License Number"/>
+    <select class="input"><option>VIP Bus Service</option><option>STC</option><option>GPRTU</option><option>OA Travel</option></select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="closeModal();showToast('Driver added!','green')">Add Driver</button>
+    </div>`;
+  document.getElementById('modal').classList.add('open');
+}
+
+function openStaffModal(){
+  document.getElementById('modalTitle').textContent='Add Staff Member';
+  document.getElementById('modalBody').innerHTML=`
+    <input class="input" placeholder="Full Name"/>
+    <input class="input" type="email" placeholder="Email Address"/>
+    <input class="input" type="password" placeholder="Temporary Password"/>
+    <select class="input"><option>Manager</option><option>Operator</option><option>Conductor</option><option>Super Admin</option></select>
+    <input class="input" placeholder="Company / Operator Name"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="closeModal();showToast('Staff member added!','green')">Add Staff</button>
+    </div>`;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+function logout(){if(confirm('Sign out of the admin panel?'))showToast('Signed out successfully','green');}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+window.addEventListener('load',()=>{ applyTheme(); });
+window.addEventListener('storage',(e)=>{ if(e.key==='th_theme') applyTheme(); });
+</script>
+</body>
+</html>
