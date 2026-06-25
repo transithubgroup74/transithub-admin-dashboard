@@ -191,11 +191,11 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
     <div class="login-sub">Enter your Staff ID and password to access the dashboard.</div>
     <div class="login-err" id="loginErr">Invalid Staff ID or password. Please try again.</div>
     <label class="login-label">Staff ID</label>
-    <input class="login-input" id="loginId" placeholder="e.g. TH-ADM-001" style="font-family:monospace;letter-spacing:.06em" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <input class="login-input" id="loginId" placeholder="e.g. HQ-AD-01" style="font-family:monospace;letter-spacing:.06em" onkeydown="if(event.key==='Enter')doLogin()"/>
     <label class="login-label">Password</label>
     <input class="login-input" id="loginPw" type="password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
     <button class="login-btn" onclick="doLogin()">Sign In →</button>
-    <div class="login-id-hint" style="margin-top:16px">Demo credentials — ID: <strong>TH-ADM-001</strong> · Password: <strong>admin123</strong></div>
+    <div class="login-id-hint" style="margin-top:16px">Demo credentials — ID: <strong>HQ-AD-01</strong> · Password: <strong>admin123</strong></div>
   </div>
 </div>
 
@@ -266,7 +266,7 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
       <div class="time-badge" id="liveClock">Loading...</div>
       <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙 Dark</button>
       <div class="staff-chip">
-        <span class="staff-chip-id" id="topbarId">TH-ADM-001</span>
+        <span class="staff-chip-id" id="topbarId">HQ-AD-01</span>
         <span class="staff-chip-name" id="topbarName">Admin</span>
       </div>
       <div class="avatar" id="topbarAvatar" onclick="showPage('settings',null)">AD</div>
@@ -597,17 +597,17 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
             <div style="width:56px;height:56px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#020E1A" id="settingsAvatar">AD</div>
             <div>
-              <div style="font-size:16px;font-weight:500" id="settingsName">Admin User</div>
+              <div style="font-size:16px;font-weight:500" id="settingsName">Kwame Mensah</div>
               <div style="font-size:13px;color:var(--text2)" id="settingsEmail">admin@transithub.com</div>
               <div style="margin-top:4px;display:flex;gap:6px;align-items:center">
                 <span class="badge badge-gold" id="settingsRole">Super Admin</span>
-                <span class="id-pill" id="settingsStaffId">TH-ADM-001</span>
+                <span class="id-pill" id="settingsStaffId">HQ-AD-01</span>
               </div>
             </div>
           </div>
           <div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:12px 14px;margin-bottom:14px">
             <div style="font-size:11px;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Your Login Staff ID</div>
-            <div style="font-size:20px;font-weight:700;font-family:monospace;color:var(--gold)" id="settingsStaffIdBig">TH-ADM-001</div>
+            <div style="font-size:20px;font-weight:700;font-family:monospace;color:var(--gold)" id="settingsStaffIdBig">HQ-AD-01</div>
             <div style="font-size:11px;color:var(--text2);margin-top:4px">Use this ID + your password to log in to this dashboard.</div>
           </div>
           <input class="input" id="settingsNameInput" placeholder="Full Name"/>
@@ -640,15 +640,30 @@ let apiOnline = false;
 // STAFF ACCOUNTS (stored in localStorage so new ones persist)
 // ══════════════════════════════════════════
 const DEFAULT_STAFF = [
-  {staffId:'TH-ADM-001', name:'Admin User',      email:'admin@transithub.com',    role:'Super Admin', company:'TransitHub HQ',      password:'admin123',  last:'Today, 08:00 AM', status:'active'},
-  {staffId:'TH-MGR-002', name:'Sarah Owusu',     email:'sarah@transithub.com',    role:'Manager',     company:'TransitHub HQ',      password:'sarah2025', last:'Today, 07:30 AM', status:'active'},
-  {staffId:'TH-OPR-003', name:'Ben Quartey',     email:'ben@vipbus.com',          role:'Operator',    company:'VIP Bus Service',    password:'ben2025',   last:'Today, 06:00 AM', status:'active'},
-  {staffId:'TH-OPR-004', name:'Grace Appiah',    email:'grace@stc.com',           role:'Operator',    company:'STC',                password:'grace2025', last:'Today, 07:00 AM', status:'active'},
-  {staffId:'TH-CON-005', name:'Emmanuel Asare',  email:'emma@transithub.com',     role:'Conductor',   company:'VIP Bus Service',    password:'emma2025',  last:'Today, 05:45 AM', status:'active'},
-  {staffId:'TH-CON-006', name:'Joyce Adu',       email:'joyce@transithub.com',    role:'Conductor',   company:'Metro Mass Transit', password:'joyce2025', last:'Yesterday',        status:'inactive'},
+  // TransitHub HQ
+  {staffId:'HQ-AD-01',  name:'Kwame Mensah',    email:'admin@transithub.com',         role:'Super Admin', company:'TransitHub HQ',       password:'admin123',    last:'Today, 08:00 AM',     status:'active'},
+  {staffId:'HQ-MG-02',  name:'Sarah Owusu',     email:'sarah@transithub.com',         role:'Manager',     company:'TransitHub HQ',       password:'sarah2025',   last:'Today, 07:30 AM',     status:'active'},
+  // VIP Jeoun
+  {staffId:'VIP-OP-03', name:'Ben Quartey',     email:'ben@vipjeoun.com',             role:'Operator',    company:'VIP Jeoun',           password:'ben2025',     last:'Today, 06:00 AM',     status:'active'},
+  {staffId:'VIP-CN-04', name:'Emmanuel Asare',  email:'emmanuel@vipjeoun.com',        role:'Conductor',   company:'VIP Jeoun',           password:'emma2025',    last:'Today, 05:45 AM',     status:'active'},
+  // OA Express
+  {staffId:'OA-OP-05',  name:'Yaw Darko',       email:'yaw@oaexpress.com',            role:'Operator',    company:'OA Express',          password:'yaw2025',     last:'Today, 06:15 AM',     status:'active'},
+  {staffId:'OA-CN-06',  name:'Kojo Antwi',      email:'kojo@oaexpress.com',           role:'Conductor',   company:'OA Express',          password:'kojo2025',    last:'Today, 05:50 AM',     status:'active'},
+  // STC
+  {staffId:'STC-OP-07', name:'Grace Appiah',    email:'grace@stc.com.gh',             role:'Operator',    company:'STC',                 password:'grace2025',   last:'Today, 07:00 AM',     status:'active'},
+  {staffId:'STC-CN-08', name:'Akosua Frimpong', email:'akosua@stc.com.gh',            role:'Conductor',   company:'STC',                 password:'akosua2025',  last:'Today, 06:05 AM',     status:'active'},
+  // Kingdom Transport
+  {staffId:'KGD-OP-09', name:'Daniel Owusu',    email:'daniel@kingdomtransport.com',  role:'Operator',    company:'Kingdom Transport',   password:'daniel2025',  last:'Today, 06:30 AM',     status:'active'},
+  {staffId:'KGD-CN-10', name:'Esi Boateng',     email:'esi@kingdomtransport.com',     role:'Conductor',   company:'Kingdom Transport',   password:'esi2025',     last:'Today, 06:10 AM',     status:'active'},
+  // Night Rider Express
+  {staffId:'NR-OP-11',  name:'Samuel Adjei',    email:'samuel@nightrider.com',        role:'Operator',    company:'Night Rider Express', password:'samuel2025',  last:'Today, 09:00 PM',     status:'active'},
+  {staffId:'NR-CN-12',  name:'Comfort Agyei',   email:'comfort@nightrider.com',       role:'Conductor',   company:'Night Rider Express', password:'comfort2025', last:'Yesterday, 10:00 PM', status:'active'},
+  // Metro Mass Transit
+  {staffId:'MMT-OP-13', name:'Joseph Tetteh',   email:'joseph@metromass.gov.gh',      role:'Operator',    company:'Metro Mass Transit',  password:'joseph2025',  last:'Today, 07:15 AM',     status:'active'},
+  {staffId:'MMT-CN-14', name:'Joyce Adu',       email:'joyce@metromass.gov.gh',       role:'Conductor',   company:'Metro Mass Transit',  password:'joyce2025',   last:'Yesterday',           status:'inactive'},
 ];
 
-const STAFF_VER = 'v3';
+const STAFF_VER = 'v4';
 function getStaffList() {
   try {
     const saved = localStorage.getItem('th_staff');
@@ -675,19 +690,32 @@ getStaffList();
 // ══════════════════════════════════════════
 // STAFF ID GENERATOR
 // ══════════════════════════════════════════
-function generateStaffId(role) {
-  const prefixMap = {
-    'Super Admin':'ADM', 'Manager':'MGR', 'Operator':'OPR', 'Conductor':'CON'
+function generateStaffId(role, company) {
+  const roleMap = {
+    'Super Admin':'AD', 'Manager':'MG', 'Operator':'OP', 'Conductor':'CN'
   };
-  const prefix = prefixMap[role] || 'STF';
+  const companyMap = {
+    'TransitHub HQ':'HQ', 'VIP Jeoun':'VIP', 'OA Express':'OA', 'STC':'STC',
+    'Kingdom Transport':'KGD', 'Night Rider Express':'NR', 'Metro Mass Transit':'MMT'
+  };
+  const roleCode = roleMap[role] || 'ST';
+  let comp = companyMap[company];
+  if (!comp) {
+    // Derive a prefix from the typed company name (initials, or first 3 letters)
+    const cleaned = (company || '').replace(/[^A-Za-z ]/g, '').trim();
+    const words = cleaned ? cleaned.split(/\s+/) : [];
+    if (words.length > 1) comp = words.map(w => w[0]).join('').toUpperCase().slice(0, 3);
+    else if (words.length === 1) comp = words[0].toUpperCase().slice(0, 3);
+    else comp = 'TH';
+  }
   const staff = getStaffList();
-  // Find highest number for this prefix
-  const existing = staff
-    .map(s => s.staffId)
-    .filter(id => id.includes(`TH-${prefix}-`))
-    .map(id => parseInt(id.split('-')[2]) || 0);
-  const next = existing.length ? Math.max(...existing) + 1 : 1;
-  return `TH-${prefix}-${String(next).padStart(3,'0')}`;
+  // Global running number across all staff
+  const nums = staff.map(s => {
+    const parts = (s.staffId || '').split('-');
+    return parseInt(parts[parts.length - 1]) || 0;
+  });
+  const next = nums.length ? Math.max(...nums) + 1 : 1;
+  return `${comp}-${roleCode}-${String(next).padStart(2, '0')}`;
 }
 
 // ══════════════════════════════════════════
@@ -1092,7 +1120,7 @@ function renderPayments() {
 // MODALS
 // ══════════════════════════════════════════
 function openStaffModal() {
-  const previewId = generateStaffId('Manager');
+  const previewId = generateStaffId('Manager', '');
   document.getElementById('modalTitle').textContent = 'Add Staff Member';
   document.getElementById('modalBody').innerHTML = `
     <div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
@@ -1106,14 +1134,14 @@ function openStaffModal() {
     <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Email</label>
     <input class="input" id="newStaffEmail" type="email" placeholder="kofi@transithub.com"/>
     <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Role</label>
-    <select class="input" id="newStaffRole" onchange="updatePreviewId(this.value)">
+    <select class="input" id="newStaffRole" onchange="updatePreviewId()">
       <option>Manager</option>
       <option>Operator</option>
       <option>Conductor</option>
       <option>Super Admin</option>
     </select>
     <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Company / Operator</label>
-    <input class="input" id="newStaffCompany" placeholder="e.g. VIP Bus Service"/>
+    <input class="input" id="newStaffCompany" placeholder="e.g. VIP Jeoun" oninput="updatePreviewId()"/>
     <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Password</label>
     <input class="input" id="newStaffPw" type="password" placeholder="Set a login password"/>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
@@ -1123,9 +1151,11 @@ function openStaffModal() {
   document.getElementById('modal').classList.add('open');
 }
 
-function updatePreviewId(role) {
+function updatePreviewId() {
   const el = document.getElementById('previewStaffId');
-  if (el) el.textContent = generateStaffId(role);
+  const role = document.getElementById('newStaffRole').value;
+  const company = document.getElementById('newStaffCompany').value;
+  if (el) el.textContent = generateStaffId(role, company);
 }
 
 function addStaff() {
@@ -1137,7 +1167,7 @@ function addStaff() {
 
   if (!name||!email||!company||!pw) { showToast('Please fill in all fields','red'); return; }
 
-  const newId = generateStaffId(role);
+  const newId = generateStaffId(role, company);
   const staff = getStaffList();
   const newMember = {
     staffId: newId,
