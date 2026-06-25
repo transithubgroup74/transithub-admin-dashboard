@@ -193,7 +193,10 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
     <label class="login-label">Staff ID</label>
     <input class="login-input" id="loginId" placeholder="Enter your Staff ID" style="font-family:monospace;letter-spacing:.06em" onkeydown="if(event.key==='Enter')doLogin()"/>
     <label class="login-label">Password</label>
-    <input class="login-input" id="loginPw" type="password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <div style="position:relative;margin-bottom:14px">
+      <input class="login-input" id="loginPw" type="password" placeholder="Enter your password" style="margin-bottom:0;padding-right:46px" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <span id="pwEye" onclick="togglePw()" title="Show / hide password" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:17px;line-height:1;user-select:none">👁️</span>
+    </div>
     <button class="login-btn" onclick="doLogin()">Sign In →</button>
   </div>
 </div>
@@ -659,10 +662,10 @@ const DEFAULT_STAFF = [
   {staffId:'NR-CN-12',  name:'Comfort Agyei',   email:'comfort@nightrider.com',       role:'Conductor',   company:'Night Rider Express', password:'comfort2025', last:'Yesterday, 10:00 PM', status:'active'},
   // Metro Mass Transit
   {staffId:'MMT-OP-13', name:'Joseph Tetteh',   email:'joseph@metromass.gov.gh',      role:'Operator',    company:'Metro Mass Transit',  password:'joseph2025',  last:'Today, 07:15 AM',     status:'active'},
-  {staffId:'MMT-CN-14', name:'Joyce Adu',       email:'joyce@metromass.gov.gh',       role:'Conductor',   company:'Metro Mass Transit',  password:'joyce2025',   last:'Yesterday',           status:'inactive'},
+  {staffId:'MMT-CN-14', name:'Joyce Adu',       email:'joyce@metromass.gov.gh',       role:'Conductor',   company:'Metro Mass Transit',  password:'joyce2025',   last:'Yesterday',           status:'active'},
 ];
 
-const STAFF_VER = 'v4';
+const STAFF_VER = 'v5';
 function getStaffList() {
   try {
     const saved = localStorage.getItem('th_staff');
@@ -755,6 +758,13 @@ function applyRolePermissions(role) {
 // AUTH
 // ══════════════════════════════════════════
 let currentStaff = null;
+
+function togglePw() {
+  const inp = document.getElementById('loginPw');
+  const eye = document.getElementById('pwEye');
+  if (inp.type === 'password') { inp.type = 'text'; eye.textContent = '🙈'; }
+  else { inp.type = 'password'; eye.textContent = '👁️'; }
+}
 
 function doLogin() {
   var id  = (document.getElementById('loginId').value || '').trim().toUpperCase();
