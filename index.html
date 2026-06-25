@@ -191,11 +191,10 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
     <div class="login-sub">Enter your Staff ID and password to access the dashboard.</div>
     <div class="login-err" id="loginErr">Invalid Staff ID or password. Please try again.</div>
     <label class="login-label">Staff ID</label>
-    <input class="login-input" id="loginId" placeholder="e.g. HQ-AD-01" style="font-family:monospace;letter-spacing:.06em" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <input class="login-input" id="loginId" placeholder="Enter your Staff ID" style="font-family:monospace;letter-spacing:.06em" onkeydown="if(event.key==='Enter')doLogin()"/>
     <label class="login-label">Password</label>
     <input class="login-input" id="loginPw" type="password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
     <button class="login-btn" onclick="doLogin()">Sign In →</button>
-    <div class="login-id-hint" style="margin-top:16px">Demo credentials — ID: <strong>HQ-AD-01</strong> · Password: <strong>admin123</strong></div>
   </div>
 </div>
 
@@ -232,24 +231,24 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
     <div class="logo-text">TransitHub</div>
     <div class="logo-sub">ADMIN PANEL</div>
   </div>
-  <div class="sidebar-section">Overview</div>
-  <div class="nav-item active" onclick="showPage('dashboard',this)"><div class="icon">📊</div><span>Dashboard</span></div>
-  <div class="nav-item" onclick="showPage('bookings',this)"><div class="icon">🎫</div><span>Bookings</span></div>
-  <div class="nav-item" onclick="showPage('schedules',this)"><div class="icon">🕐</div><span>Schedules</span></div>
-  <div class="nav-item" onclick="showPage('routes',this)"><div class="icon">🗺️</div><span>Routes</span></div>
-  <div class="sidebar-section">Fleet</div>
-  <div class="nav-item" onclick="showPage('buses',this)"><div class="icon">🚌</div><span>Buses</span></div>
-  <div class="nav-item" onclick="showPage('drivers',this)"><div class="icon">👤</div><span>Drivers</span></div>
-  <div class="sidebar-section">People</div>
-  <div class="nav-item" onclick="showPage('passengers',this)"><div class="icon">👥</div><span>Passengers</span></div>
-  <div class="nav-item" onclick="showPage('staff',this)"><div class="icon">🏢</div><span>Staff & Roles</span></div>
-  <div class="sidebar-section">Finance</div>
-  <div class="nav-item" onclick="showPage('revenue',this)"><div class="icon">💰</div><span>Revenue</span></div>
-  <div class="nav-item" onclick="showPage('payments',this)"><div class="icon">💳</div><span>Payments</span></div>
-  <div class="sidebar-section">Operations</div>
-  <div class="nav-item" onclick="showPage('scan',this)"><div class="icon">📷</div><span>QR Scanner</span></div>
-  <div class="nav-item" onclick="showPage('notifications',this)"><div class="icon">🔔</div><span>Send Alerts</span></div>
-  <div class="nav-item" onclick="showPage('settings',this)"><div class="icon">⚙️</div><span>Settings</span></div>
+  <div class="sidebar-section" data-group="Overview">Overview</div>
+  <div class="nav-item active" data-page="dashboard" data-group="Overview" onclick="showPage('dashboard',this)"><div class="icon">📊</div><span>Dashboard</span></div>
+  <div class="nav-item" data-page="bookings" data-group="Overview" onclick="showPage('bookings',this)"><div class="icon">🎫</div><span>Bookings</span></div>
+  <div class="nav-item" data-page="schedules" data-group="Overview" onclick="showPage('schedules',this)"><div class="icon">🕐</div><span>Schedules</span></div>
+  <div class="nav-item" data-page="routes" data-group="Overview" onclick="showPage('routes',this)"><div class="icon">🗺️</div><span>Routes</span></div>
+  <div class="sidebar-section" data-group="Fleet">Fleet</div>
+  <div class="nav-item" data-page="buses" data-group="Fleet" onclick="showPage('buses',this)"><div class="icon">🚌</div><span>Buses</span></div>
+  <div class="nav-item" data-page="drivers" data-group="Fleet" onclick="showPage('drivers',this)"><div class="icon">👤</div><span>Drivers</span></div>
+  <div class="sidebar-section" data-group="People">People</div>
+  <div class="nav-item" data-page="passengers" data-group="People" onclick="showPage('passengers',this)"><div class="icon">👥</div><span>Passengers</span></div>
+  <div class="nav-item" data-page="staff" data-group="People" onclick="showPage('staff',this)"><div class="icon">🏢</div><span>Staff & Roles</span></div>
+  <div class="sidebar-section" data-group="Finance">Finance</div>
+  <div class="nav-item" data-page="revenue" data-group="Finance" onclick="showPage('revenue',this)"><div class="icon">💰</div><span>Revenue</span></div>
+  <div class="nav-item" data-page="payments" data-group="Finance" onclick="showPage('payments',this)"><div class="icon">💳</div><span>Payments</span></div>
+  <div class="sidebar-section" data-group="Operations">Operations</div>
+  <div class="nav-item" data-page="scan" data-group="Operations" onclick="showPage('scan',this)"><div class="icon">📷</div><span>QR Scanner</span></div>
+  <div class="nav-item" data-page="notifications" data-group="Operations" onclick="showPage('notifications',this)"><div class="icon">🔔</div><span>Send Alerts</span></div>
+  <div class="nav-item" data-page="settings" data-group="Operations" onclick="showPage('settings',this)"><div class="icon">⚙️</div><span>Settings</span></div>
   <div style="margin-top:auto;padding:16px 8px;border-top:1px solid rgba(255,255,255,.1)">
     <div class="nav-item" style="color:var(--red)" onclick="logout()"><div class="icon">🚪</div><span>Sign Out</span></div>
   </div>
@@ -719,6 +718,40 @@ function generateStaffId(role, company) {
 }
 
 // ══════════════════════════════════════════
+// ROLE-BASED ACCESS
+// ══════════════════════════════════════════
+// Which pages each role can see
+const ROLE_PAGES = {
+  'Super Admin': ['dashboard','bookings','schedules','routes','buses','drivers','passengers','staff','revenue','payments','scan','notifications','settings'],
+  'Manager':     ['dashboard','bookings','schedules','routes','buses','drivers','passengers','revenue','payments','notifications','settings'],
+  'Operator':    ['dashboard','bookings','schedules','routes','buses','drivers','revenue','payments','settings'],
+  'Conductor':   ['scan','schedules','settings'],
+};
+// The page each role lands on after login
+const ROLE_HOME = { 'Super Admin':'dashboard', 'Manager':'dashboard', 'Operator':'dashboard', 'Conductor':'scan' };
+
+function applyRolePermissions(role) {
+  const allowed = ROLE_PAGES[role] || ROLE_PAGES['Conductor'];
+  // Show/hide nav items
+  document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+    el.style.display = allowed.includes(el.getAttribute('data-page')) ? '' : 'none';
+  });
+  // Hide section headers whose items are all hidden
+  document.querySelectorAll('.sidebar-section[data-group]').forEach(h => {
+    const group = h.getAttribute('data-group');
+    let anyVisible = false;
+    document.querySelectorAll(`.nav-item[data-group="${group}"]`).forEach(it => {
+      if (it.style.display !== 'none') anyVisible = true;
+    });
+    h.style.display = anyVisible ? '' : 'none';
+  });
+  // Land on this role's home page
+  const home = ROLE_HOME[role] || 'settings';
+  const homeEl = document.querySelector(`.nav-item[data-page="${home}"]`);
+  showPage(home, homeEl);
+}
+
+// ══════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════
 let currentStaff = null;
@@ -767,6 +800,7 @@ function doLogin() {
   document.getElementById('settingsEmailInput').value = found.email;
 
   document.getElementById('loginScreen').classList.add('hidden');
+  applyRolePermissions(found.role);
   showToast(`Welcome back, ${found.name.split(' ')[0]}! 👋`,'green');
   loadAllData();
 }
