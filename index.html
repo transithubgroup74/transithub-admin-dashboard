@@ -132,6 +132,21 @@ textarea.input{color:#ffffff !important;-webkit-text-fill-color:#ffffff !importa
 .api-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,201,167,.12);border:1px solid rgba(0,201,167,.25);color:var(--green);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:600}
 .api-badge.offline{background:rgba(255,165,2,.1);border-color:rgba(255,165,2,.3);color:var(--orange)}
 @media(max-width:900px){.stats-grid{grid-template-columns:1fr 1fr}.grid-2{grid-template-columns:1fr}.sidebar{width:60px}.sidebar-logo .logo-text,.sidebar-logo .logo-sub,.nav-item span,.sidebar-section{display:none}.main{margin-left:60px}}
+/* ── PHONE (≤600px): tables scroll within their card instead of squishing ── */
+@media(max-width:600px){
+  .content{padding:12px}
+  .topbar{padding:0 12px}
+  .staff-chip-name{display:none}
+  .page-title{font-size:16px}
+  .stats-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .stat-card{padding:14px}
+  .stat-val{font-size:22px}
+  .card{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .table{width:auto;min-width:100%}
+  .table th,.table td{white-space:nowrap}
+  .form-row{grid-template-columns:1fr}
+  .modal{padding:18px}
+}
 
 body.light-mode{
   --bg:#F0F4FA;--card:#FFFFFF;--navy:#1B3A6B;--gold:#B8922A;
