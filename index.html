@@ -865,14 +865,45 @@ async function loadAllData() {
     fallbackDemoData();
   }
 
-  // Try bookings separately (needs auth on some endpoints)
+  // All real bookings from the app (admin endpoint returns every booking).
   try {
-    const bookings = await apiGet('/bookings/my');
-    liveBookings = bookings || [];
+    const adminBookings = await apiGet('/admin/bookings');
+    const real = (adminBookings || []).filter(b => !isTestAccount(b.email)).map(normalizeBooking);
+    liveBookings = real.length ? real : DEMO_BOOKINGS;
   } catch(e) {
     liveBookings = DEMO_BOOKINGS;
   }
+  // Real passengers registered in the app.
+  try {
+    const ps = await apiGet('/admin/passengers');
+    livePassengers = (ps || []).filter(p => !isTestAccount(p.email));
+  } catch(e) {
+    livePassengers = [];
+  }
+  updateDashboard();
   renderBookings();
+  renderPassengers();
+}
+
+// Hide the throwaway accounts created while testing the backend.
+function isTestAccount(email){
+  return /^(synctest_|review_)/i.test(String(email || ''));
+}
+
+// The admin endpoint returns a flat booking; map it to the nested shape the
+// existing render code already expects — so nothing in the UI changes.
+let livePassengers = [];
+function normalizeBooking(b){
+  const parts = String(b.route || '').split('→').map(s => s.trim());
+  return {
+    id: b.id,
+    user: { name: b.passenger, email: b.email },
+    schedule: { route: { origin: parts[0] || '', destination: parts[1] || '' }, departsAt: b.departsAt },
+    seatNumber: b.seat,
+    totalAmount: b.amount,
+    status: b.status,
+    createdAt: b.createdAt,
+  };
 }
 
 function fallbackDemoData() {
@@ -1138,9 +1169,20 @@ function renderPassengers() {
     {name:'Kwame Asante',email:'kwame@email.com',phone:'+233 24 345 6789',trips:15,last:'21 Jun 2026',spent:'GHS 1,245',status:'active'},
     {name:'Ama Boateng',email:'ama@email.com',phone:'+233 55 456 7890',trips:3,last:'20 Jun 2026',spent:'GHS 249',status:'active'},
   ];
-  document.getElementById('passengersTable').innerHTML = demo.map(p=>`<tr>
+  // Real passengers registered in the app; fall back to demo if none yet.
+  const real = (livePassengers || []).map(p => ({
+    name: p.name || (p.email ? p.email.split('@')[0] : 'Passenger'),
+    email: p.email || '—',
+    phone: p.phone || '—',
+    trips: p.trips || 0,
+    last: p.createdAt ? String(p.createdAt).slice(0,10) : '—',
+    spent: '—',
+    status: 'active',
+  }));
+  const data = real.length ? real : demo;
+  document.getElementById('passengersTable').innerHTML = data.map(p=>`<tr>
     <td><div style="display:flex;align-items:center;gap:8px">
-      <div class="user-avatar" style="background:var(--gold)">${p.name.split(' ').map(w=>w[0]).join('')}</div>
+      <div class="user-avatar" style="background:var(--gold)">${p.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
       ${p.name}
     </div></td>
     <td>${p.email}</td><td>${p.phone}</td><td>${p.trips}</td>
