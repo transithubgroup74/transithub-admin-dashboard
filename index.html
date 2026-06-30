@@ -875,10 +875,10 @@ async function loadAllData() {
   try {
     const [routes, schedules] = await Promise.all([
       apiGet('/routes'),
-      apiGet('/schedules'),
+      apiGet('/admin/schedules'),
     ]);
     liveRoutes    = routes    || [];
-    liveSchedules = schedules || [];
+    liveSchedules = (schedules || []).map(normalizeSchedule);
     apiOnline = true;
     document.getElementById('apiBadge').className = 'api-badge';
     document.getElementById('apiBadge').textContent = '● Live';
@@ -934,6 +934,18 @@ function isTestAccount(email){
 // The admin endpoint returns a flat booking; map it to the nested shape the
 // existing render code already expects — so nothing in the UI changes.
 let livePassengers = [];
+// The lean /admin/schedules endpoint returns flat rows; map them to the nested
+// shape renderSchedules already expects so the render code stays unchanged.
+function normalizeSchedule(s){
+  return {
+    id: s.id,
+    route: { origin: s.origin, destination: s.destination, operator: { companyName: s.operator } },
+    departsAt: s.departsAt,
+    status: s.status,
+    busClass: s.busClass,
+    source: s.source,
+  };
+}
 function normalizeBooking(b){
   const parts = String(b.route || '').split('→').map(s => s.trim());
   return {
@@ -1427,7 +1439,7 @@ async function submitSchedule(){
   try {
     await apiPost('/schedules', { routeId, departsAt: `${date}T${time}` });
     closeModal(); showToast('Schedule added — live in the app','green');
-    liveSchedules = (await apiGet('/schedules'))||[]; renderSchedules(); updateDashboard();
+    liveSchedules = ((await apiGet('/admin/schedules'))||[]).map(normalizeSchedule); renderSchedules(); updateDashboard();
   } catch(e){ showToast('Could not add schedule','red'); }
 }
 
