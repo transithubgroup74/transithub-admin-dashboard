@@ -345,14 +345,8 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
           </table>
         </div>
         <div class="card">
-          <div class="card-title">Payment Methods</div>
-          <div>
-            <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>MTN MoMo</span><span style="color:var(--gold)">60%</span></div><div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div></div>
-            <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Telecel Cash</span><span style="color:var(--gold)">17%</span></div><div class="progress-bar"><div class="progress-fill" style="width:17%;background:var(--green)"></div></div></div>
-            <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>AirtelTigo Money</span><span style="color:var(--gold)">11%</span></div><div class="progress-bar"><div class="progress-fill" style="width:11%;background:var(--orange)"></div></div></div>
-            <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Visa / Mastercard</span><span style="color:var(--gold)">7%</span></div><div class="progress-bar"><div class="progress-fill" style="width:7%;background:#7C3AED"></div></div></div>
-            <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Bank Transfer</span><span style="color:var(--gold)">5%</span></div><div class="progress-bar"><div class="progress-fill" style="width:5%;background:#2563EB"></div></div></div>
-          </div>
+          <div class="card-title">Booking Status <span id="statusSource" style="font-size:11px;color:var(--text2)"></span></div>
+          <div id="statusBreakdown"></div>
         </div>
       </div>
       <div class="card">
@@ -1052,6 +1046,7 @@ function updateDashboard() {
   // Recent bookings
   renderRecentBookings();
   renderChart();
+  renderStatusBreakdown();
 }
 
 function renderRecentBookings() {
@@ -1633,12 +1628,41 @@ setInterval(liveClock,1000);liveClock();
 // ══════════════════════════════════════════
 // CHART
 // ══════════════════════════════════════════
+// Real weekly bookings — the last 7 days ending today, counted by createdAt.
 function renderChart(){
-  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const vals=[180,210,195,230,247,310,280];
-  const max=Math.max(...vals);
-  document.getElementById('barChart').innerHTML=vals.map(v=>`<div style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center"><div class="bar" style="height:${v/max*100}px;width:100%"><div class="bar-val">${v}</div></div></div>`).join('');
+  const dayAbbr=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const days=[], vals=[];
+  const now=new Date();
+  for(let i=6;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);
+    days.push(dayAbbr[d.getDay()]);
+    const start=d.getTime(), end=start+24*60*60*1000;
+    vals.push((liveBookings||[]).filter(b=>{ const t=b.createdAt?new Date(b.createdAt).getTime():0; return t>=start && t<end; }).length);
+  }
+  const max=Math.max(1,...vals);
+  document.getElementById('barChart').innerHTML=vals.map(v=>`<div style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center"><div class="bar" style="height:${Math.max(2,v/max*100)}px;width:100%"><div class="bar-val">${v}</div></div></div>`).join('');
   document.getElementById('barLabels').innerHTML=`<div style="display:flex;gap:8px;width:100%">`+days.map(d=>`<div class="bar-label" style="flex:1">${d}</div>`).join('')+'</div>';
+}
+
+// Real booking-status breakdown — recomputed from liveBookings every refresh.
+function renderStatusBreakdown(){
+  const el=document.getElementById('statusBreakdown');
+  if(!el) return;
+  const list=liveBookings||[];
+  const total=list.length;
+  const src=document.getElementById('statusSource'); if(src) src.textContent = apiOnline ? '● live' : '● demo';
+  if(!total){ el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:8px 0">No bookings yet.</div>'; return; }
+  const defs=[
+    {key:'confirmed',label:'Confirmed',color:'var(--green)'},
+    {key:'completed',label:'Completed',color:'var(--gold)'},
+    {key:'pending',  label:'Pending',  color:'var(--orange)'},
+    {key:'cancelled',label:'Cancelled',color:'var(--red)'},
+  ];
+  el.innerHTML=defs.map(d=>{
+    const n=list.filter(b=>String(b.status||'').toLowerCase()===d.key).length;
+    const pct=Math.round(n/total*100);
+    return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${d.label}</span><span style="color:var(--gold)">${n} · ${pct}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${d.color}"></div></div></div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════
