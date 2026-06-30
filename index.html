@@ -1213,12 +1213,29 @@ function renderPayments() {
     {ref:'PSK-003',p:'Kwame Asante',amt:'GHS 140.00',method:'Visa',bid:'b003',status:'success',time:'07:02 AM'},
     {ref:'PSK-004',p:'Ama Boateng',amt:'GHS 130.00',method:'GCB Bank',bid:'b004',status:'failed',time:'07:30 AM'},
   ];
-  document.getElementById('paymentsTable').innerHTML = demo.map(p=>`<tr>
+  // Each real booking is a payment transaction — derive the list from live bookings.
+  const real = (liveBookings || []).map(b => {
+    const id = String(b.id || '').replace(/-/g,'');
+    const st = b.status === 'cancelled' ? 'refunded' : (b.status === 'pending' ? 'pending' : 'success');
+    return {
+      ref: 'PSK-' + id.slice(-6).toUpperCase(),
+      p: b.user?.name || (b.user?.email ? b.user.email.split('@')[0] : 'Passenger'),
+      amt: 'GHS ' + parseFloat(b.totalAmount || 0).toFixed(2),
+      method: 'Paystack',
+      bid: 'THB-' + id.slice(-8).toUpperCase(),
+      status: st,
+      time: b.createdAt ? new Date(b.createdAt).toLocaleString('en-GH',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—',
+    };
+  });
+  const data = real.length ? real : demo;
+  const tbody = document.getElementById('paymentsTable');
+  if (!data.length) { tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">No payments yet.</td></tr>'; return; }
+  tbody.innerHTML = data.map(p=>`<tr>
     <td style="font-family:monospace;font-size:11px">${p.ref}</td>
     <td>${p.p}</td><td style="color:var(--gold)">${p.amt}</td>
     <td><span class="badge badge-gray">${p.method}</span></td>
     <td style="font-family:monospace;font-size:11px">${p.bid}</td>
-    <td><span class="badge ${p.status==='success'?'badge-green':'badge-red'}">${p.status}</span></td>
+    <td><span class="badge ${p.status==='success'?'badge-green':p.status==='pending'?'badge-orange':'badge-red'}">${p.status}</span></td>
     <td style="color:var(--text2);font-size:12px">${p.time}</td>
   </tr>`).join('');
 }
