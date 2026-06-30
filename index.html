@@ -497,10 +497,10 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
     <!-- REVENUE -->
     <div class="page" id="page-revenue">
       <div class="stats-grid">
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(201,168,76,.15)">💰</div><div class="stat-val" style="color:var(--gold)">GHS 21,890</div><div class="stat-label">Today's Revenue</div><div class="stat-change up">↑ 8%</div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(0,201,167,.15)">📈</div><div class="stat-val" style="color:var(--gold)">GHS 134,200</div><div class="stat-label">This Week</div><div class="stat-change up">↑ 15%</div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(27,58,107,.4)">📊</div><div class="stat-val" style="color:var(--gold)">GHS 489,600</div><div class="stat-label">This Month</div><div class="stat-change up">↑ 22%</div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(201,168,76,.15)">🏆</div><div class="stat-val" style="color:var(--gold)">GHS 2.1M</div><div class="stat-label">This Year</div><div class="stat-change up">↑ 34%</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(201,168,76,.15)">💰</div><div class="stat-val" style="color:var(--gold)" id="revToday">GHS 0</div><div class="stat-label">Today's Revenue</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(0,201,167,.15)">📈</div><div class="stat-val" style="color:var(--gold)" id="revWeek">GHS 0</div><div class="stat-label">This Week</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(27,58,107,.4)">📊</div><div class="stat-val" style="color:var(--gold)" id="revMonth">GHS 0</div><div class="stat-label">This Month</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(201,168,76,.15)">🏆</div><div class="stat-val" style="color:var(--gold)" id="revTotal">GHS 0</div><div class="stat-label">Total Revenue</div></div>
       </div>
       <div class="grid-2">
         <div class="card">
@@ -968,9 +968,24 @@ function updateDashboard() {
   document.getElementById('statRoutes').textContent    = liveRoutes.length;
   document.getElementById('statSchedules').textContent = liveSchedules.length;
   document.getElementById('statBookings').textContent  = liveBookings.length || '0';
-  const totalRev = liveBookings.reduce((s,b)=>s+(parseFloat(b.totalAmount)||0),0);
-  document.getElementById('statRevenue').textContent   = 'GHS '+(totalRev > 0 ? totalRev.toFixed(0) : '573');
+  // Revenue = paid bookings only (confirmed or completed).
+  const paid = liveBookings.filter(b => b.status === 'confirmed' || b.status === 'completed');
+  const totalRev = paid.reduce((s,b)=>s+(parseFloat(b.totalAmount)||0),0);
+  document.getElementById('statRevenue').textContent   = 'GHS '+totalRev.toFixed(0);
   document.getElementById('donutTotal').textContent    = liveBookings.length || '0';
+
+  // Revenue page summary cards (today / week / month / total)
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startWeek  = startToday - 6*24*60*60*1000;
+  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const sumSince = (ms) => paid.reduce((s,b)=>{ const t = b.createdAt ? new Date(b.createdAt).getTime() : 0; return s + (t >= ms ? (parseFloat(b.totalAmount)||0) : 0); }, 0);
+  const gh = (n) => 'GHS '+Number(n).toLocaleString('en-GH',{maximumFractionDigits:0});
+  const setRev = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent = gh(v); };
+  setRev('revToday', sumSince(startToday));
+  setRev('revWeek',  sumSince(startWeek));
+  setRev('revMonth', sumSince(startMonth));
+  setRev('revTotal', totalRev);
   document.getElementById('statRoutesChange').textContent = liveRoutes.length+' routes in Railway DB';
   const conf = liveBookings.filter(b=>b.status==='confirmed').length;
   document.getElementById('statBookingsChange').textContent = apiOnline ? `↑ ${conf} confirmed today` : `${conf} confirmed (demo)`;
