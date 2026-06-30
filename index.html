@@ -430,10 +430,10 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
         <button class="btn btn-gold btn-sm" onclick="openBusModal()">+ Add Bus</button>
       </div>
       <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(0,201,167,.15)">✅</div><div class="stat-val">18</div><div class="stat-label">Active Buses</div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(255,165,2,.15)">🔧</div><div class="stat-val">3</div><div class="stat-label">In Maintenance</div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(201,168,76,.15)">⭐</div><div class="stat-val">8</div><div class="stat-label">Executive Buses</div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(27,58,107,.4)">🚌</div><div class="stat-val">21</div><div class="stat-label">Total Fleet</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(0,201,167,.15)">✅</div><div class="stat-val" id="busActive">18</div><div class="stat-label">Active Buses</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(255,165,2,.15)">🔧</div><div class="stat-val" id="busMaint">3</div><div class="stat-label">In Maintenance</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(201,168,76,.15)">⭐</div><div class="stat-val" id="busExec">8</div><div class="stat-label">Executive Buses</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(27,58,107,.4)">🚌</div><div class="stat-val" id="busTotal">21</div><div class="stat-label">Total Fleet</div></div>
       </div>
       <div class="card">
         <table class="table">
@@ -851,11 +851,24 @@ function logout() {
 let liveRoutes    = [];
 let liveSchedules = [];
 let liveBookings  = [];
+let liveBuses     = [];
+let liveDrivers   = [];
+let liveOperators = [];
 
 async function apiGet(path) {
   const r = await fetch(API + path, {headers:{'Content-Type':'application/json'}});
   if (!r.ok) throw new Error(r.status);
   return r.json();
+}
+async function apiPost(path, body) {
+  const r = await fetch(API + path, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+async function apiDelete(path) {
+  const r = await fetch(API + path, {method:'DELETE',headers:{'Content-Type':'application/json'}});
+  if (!r.ok) throw new Error(r.status);
+  return r.json().catch(()=>({}));
 }
 
 async function loadAllData() {
@@ -895,9 +908,22 @@ async function loadAllData() {
   } catch(e) {
     livePassengers = [];
   }
+  // Fleet — buses, drivers, and operators (operators power the modal dropdowns).
+  try {
+    const [buses, drivers, operators] = await Promise.all([
+      apiGet('/buses'), apiGet('/drivers'), apiGet('/operators'),
+    ]);
+    liveBuses     = buses     || [];
+    liveDrivers   = drivers   || [];
+    liveOperators = operators || [];
+  } catch(e) {
+    liveBuses = []; liveDrivers = []; liveOperators = [];
+  }
   updateDashboard();
   renderBookings();
   renderPassengers();
+  renderBuses();
+  renderDrivers();
 }
 
 // Hide the throwaway accounts created while testing the backend.
@@ -1154,42 +1180,82 @@ function showStaffId(id, name) {
   document.getElementById('modal').classList.add('open');
 }
 
+const DEMO_BUSES = [
+  {plate:'GR-1234-22',company:'VIP Bus Service',model:'Hyundai Universe',cap:45,status:'active'},
+  {plate:'GR-5678-22',company:'VIP Jeoun Executive',model:'Volvo 9700',cap:30,status:'active'},
+  {plate:'GR-9012-21',company:'STC',model:'Mercedes Tourismo',cap:45,status:'active'},
+  {plate:'GR-7890-20',company:'GPRTU',model:'Yutong ZK6122H',cap:45,status:'maintenance'},
+  {plate:'GR-0123-23',company:'Kingdom Transport',model:'Scania Touring HD',cap:30,status:'active'},
+];
+function busClass(b){ return /exec/i.test(b.model||'') ? 'Executive' : 'Regular'; }
 function renderBuses() {
-  const buses = [
-    {plate:'GR-1234-22',op:'VIP Bus Service',model:'Hyundai Universe',cls:'Regular',cap:45,status:'active'},
-    {plate:'GR-5678-22',op:'VIP Jeoun Executive',model:'Volvo 9700',cls:'Executive',cap:30,status:'active'},
-    {plate:'GR-9012-21',op:'STC',model:'Mercedes Tourismo',cls:'Regular',cap:45,status:'active'},
-    {plate:'GR-7890-20',op:'GPRTU',model:'Yutong ZK6122H',cls:'Regular',cap:45,status:'maintenance'},
-    {plate:'GR-0123-23',op:'Kingdom Transport',model:'Scania Touring HD',cls:'Executive',cap:30,status:'active'},
-  ];
-  document.getElementById('busesTable').innerHTML = buses.map(b=>`<tr>
-    <td style="font-family:monospace;font-size:12px">${b.plate}</td>
-    <td>${b.op}</td><td>${b.model}</td>
-    <td><span class="badge ${b.cls==='Executive'?'badge-gold':'badge-gray'}">${b.cls}</span></td>
-    <td>${b.cap}</td>
-    <td><span class="badge ${b.status==='active'?'badge-green':'badge-orange'}">${b.status}</span></td>
-    <td><button class="btn btn-sm btn-outline" onclick="showToast('Bus record loaded','green')">Edit</button></td>
-  </tr>`).join('');
+  const buses = (liveBuses && liveBuses.length) ? liveBuses : DEMO_BUSES;
+  // Stat cards
+  const active = buses.filter(b=>(b.status||'active')==='active').length;
+  const maint  = buses.filter(b=>(b.status||'')==='maintenance').length;
+  const exec   = buses.filter(b=>busClass(b)==='Executive').length;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('busActive',active); set('busMaint',maint); set('busExec',exec); set('busTotal',buses.length);
+
+  const tbody = document.getElementById('busesTable');
+  if (!buses.length) { tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">No buses yet. Add one with “+ Add Bus”.</td></tr>'; return; }
+  tbody.innerHTML = buses.map(b=>{
+    const cls = busClass(b);
+    const plate = b.plate || b.plateNumber || '—';
+    const company = b.company || b.op || '—';
+    const cap = b.cap != null ? b.cap : (b.capacity != null ? b.capacity : '—');
+    const st = b.status || 'active';
+    const action = b.id
+      ? `<button class="btn btn-sm btn-outline" onclick="deleteBus('${b.id}','${plate}')">Remove</button>`
+      : `<button class="btn btn-sm btn-outline" onclick="showToast('Demo bus','green')">Edit</button>`;
+    return `<tr>
+    <td style="font-family:monospace;font-size:12px">${plate}</td>
+    <td>${company}</td><td>${b.model||'—'}</td>
+    <td><span class="badge ${cls==='Executive'?'badge-gold':'badge-gray'}">${cls}</span></td>
+    <td>${cap}</td>
+    <td><span class="badge ${st==='active'?'badge-green':'badge-orange'}">${st}</span></td>
+    <td>${action}</td>
+  </tr>`;}).join('');
+}
+async function deleteBus(id, plate){
+  if(!confirm('Remove bus '+plate+' from the fleet?')) return;
+  try { await apiDelete('/buses/'+id); liveBuses = liveBuses.filter(b=>b.id!==id); renderBuses(); showToast('Bus removed','green'); }
+  catch(e){ showToast('Could not remove bus','red'); }
 }
 
+const DEMO_DRIVERS = [
+  {name:'Kofi Agyemang',phone:'+233 24 111 2222',company:'VIP Bus Service',licenseNumber:'DRV-2021-001',status:'active'},
+  {name:'Yaw Mensah',phone:'+233 20 333 4444',company:'VIP Jeoun Exec',licenseNumber:'DRV-2020-002',status:'active'},
+  {name:'Kweku Asante',phone:'+233 24 555 6666',company:'STC',licenseNumber:'DRV-2019-003',status:'active'},
+  {name:'Fiifi Boateng',phone:'+233 26 999 0000',company:'GPRTU',licenseNumber:'DRV-2018-005',status:'off-duty'},
+];
 function renderDrivers() {
-  const drivers = [
-    {name:'Kofi Agyemang',phone:'+233 24 111 2222',op:'VIP Bus Service',lic:'DRV-2021-001',rating:'4.9 ⭐',status:'on-duty'},
-    {name:'Yaw Mensah',phone:'+233 20 333 4444',op:'VIP Jeoun Exec',lic:'DRV-2020-002',rating:'4.8 ⭐',status:'on-duty'},
-    {name:'Kweku Asante',phone:'+233 24 555 6666',op:'STC',lic:'DRV-2019-003',rating:'4.7 ⭐',status:'on-duty'},
-    {name:'Fiifi Boateng',phone:'+233 26 999 0000',op:'GPRTU',lic:'DRV-2018-005',rating:'4.6 ⭐',status:'off-duty'},
-  ];
-  document.getElementById('driversTable').innerHTML = drivers.map(d=>`<tr>
+  const drivers = (liveDrivers && liveDrivers.length) ? liveDrivers : DEMO_DRIVERS;
+  const tbody = document.getElementById('driversTable');
+  if (!drivers.length) { tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">No drivers yet. Add one with “+ Add Driver”.</td></tr>'; return; }
+  tbody.innerHTML = drivers.map(d=>{
+    const name = d.name || '—';
+    const initials = name.split(' ').map(w=>w[0]).join('').slice(0,2);
+    const st = d.status || 'active';
+    const action = d.id
+      ? `<button class="btn btn-sm btn-outline" onclick="deleteDriver('${d.id}','${name.replace(/'/g,'')}')">Remove</button>`
+      : `<button class="btn btn-sm btn-outline" onclick="showToast('Demo driver','green')">View</button>`;
+    return `<tr>
     <td><div style="display:flex;align-items:center;gap:8px">
-      <div class="user-avatar" style="background:var(--navy);color:var(--gold);font-size:11px">${d.name.split(' ').map(w=>w[0]).join('')}</div>
-      ${d.name}
+      <div class="user-avatar" style="background:var(--navy);color:var(--gold);font-size:11px">${initials}</div>
+      ${name}
     </div></td>
-    <td>${d.phone}</td><td>${d.op}</td>
-    <td style="font-family:monospace;font-size:11px">${d.lic}</td>
-    <td>${d.rating}</td>
-    <td><span class="badge ${d.status==='on-duty'?'badge-green':'badge-gray'}">${d.status}</span></td>
-    <td><button class="btn btn-sm btn-outline" onclick="showToast('Driver loaded','green')">View</button></td>
-  </tr>`).join('');
+    <td>${d.phone||'—'}</td><td>${d.company||d.op||'—'}</td>
+    <td style="font-family:monospace;font-size:11px">${d.licenseNumber||d.lic||'—'}</td>
+    <td>${d.rating||'—'}</td>
+    <td><span class="badge ${st==='active'||st==='on-duty'?'badge-green':'badge-gray'}">${st}</span></td>
+    <td>${action}</td>
+  </tr>`;}).join('');
+}
+async function deleteDriver(id, name){
+  if(!confirm('Remove driver '+name+'?')) return;
+  try { await apiDelete('/drivers/'+id); liveDrivers = liveDrivers.filter(d=>d.id!==id); renderDrivers(); showToast('Driver removed','green'); }
+  catch(e){ showToast('Could not remove driver','red'); }
 }
 
 function renderPassengers() {
@@ -1328,76 +1394,131 @@ function addStaff() {
   setTimeout(()=>showStaffId(newId, name), 400);
 }
 
+const LBL='font-size:12px;color:var(--text2);margin-bottom:4px;display:block';
+function val(id){const el=document.getElementById(id);return el?String(el.value).trim():'';}
+function operatorOptions(){
+  if(liveOperators&&liveOperators.length) return liveOperators.map(o=>`<option value="${o.id}">${o.companyName}</option>`).join('');
+  return '<option value="">VIP Jeoun</option><option value="">OA Express</option><option value="">STC Coaches</option><option value="">Kingdom Transport</option>';
+}
+
 function openScheduleModal() {
   document.getElementById('modalTitle').textContent='Add New Schedule';
+  const routeOpts = (liveRoutes&&liveRoutes.length)
+    ? liveRoutes.map(r=>`<option value="${r.id}">${r.origin} → ${r.destination}</option>`).join('')
+    : '<option value="">No routes yet — add a route first</option>';
   document.getElementById('modalBody').innerHTML=`
+    <label style="${LBL}">Route</label>
+    <select class="input" id="schRoute">${routeOpts}</select>
     <div class="form-row">
-      <div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Origin</label>
-      <select class="input">${liveRoutes.map(r=>`<option>${r.origin}</option>`).join('')||'<option>Kumasi</option><option>Accra</option>'}</select></div>
-      <div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Destination</label>
-      <select class="input">${liveRoutes.map(r=>`<option>${r.destination}</option>`).join('')||'<option>Accra</option><option>Tamale</option>'}</select></div>
+      <div><label style="${LBL}">Date</label><input class="input" type="date" id="schDate"/></div>
+      <div><label style="${LBL}">Departure Time</label><input class="input" type="time" id="schTime" value="06:00"/></div>
     </div>
-    <div class="form-row">
-      <div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Departure Time</label><input class="input" type="time" value="06:00"/></div>
-      <div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Date</label><input class="input" type="date"/></div>
-    </div>
+    <div style="font-size:11px;color:var(--text2);margin:4px 0 8px">This schedule becomes bookable in the passenger app instantly.</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-gold" onclick="closeModal();showToast('Schedule added!','green')">Add Schedule</button>
+      <button class="btn btn-gold" onclick="submitSchedule()">Add Schedule</button>
     </div>`;
   document.getElementById('modal').classList.add('open');
+}
+async function submitSchedule(){
+  const routeId=val('schRoute'), date=val('schDate'), time=val('schTime')||'06:00';
+  if(!routeId){ showToast('Pick a route first','red'); return; }
+  if(!date){ showToast('Pick a date','red'); return; }
+  try {
+    await apiPost('/schedules', { routeId, departsAt: `${date}T${time}` });
+    closeModal(); showToast('Schedule added — live in the app','green');
+    liveSchedules = (await apiGet('/schedules'))||[]; renderSchedules(); updateDashboard();
+  } catch(e){ showToast('Could not add schedule','red'); }
 }
 
 function openRouteModal(){
   document.getElementById('modalTitle').textContent='Add New Route';
   document.getElementById('modalBody').innerHTML=`
     <div class="form-row">
-      <div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Origin City</label><input class="input" placeholder="e.g. Kumasi"/></div>
-      <div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Destination City</label><input class="input" placeholder="e.g. Accra"/></div>
+      <div><label style="${LBL}">Origin City</label><input class="input" id="rtOrigin" placeholder="e.g. Kumasi"/></div>
+      <div><label style="${LBL}">Destination City</label><input class="input" id="rtDest" placeholder="e.g. Accra"/></div>
     </div>
     <div class="form-row">
-      <div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Base Price (GHS)</label><input class="input" type="number" placeholder="80"/></div>
-      <div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Duration</label><input class="input" placeholder="e.g. 5h 30m"/></div>
+      <div><label style="${LBL}">Base Price (GHS)</label><input class="input" id="rtPrice" type="number" placeholder="80"/></div>
+      <div><label style="${LBL}">Operator</label><select class="input" id="rtOperator">${operatorOptions()}</select></div>
     </div>
+    <div style="font-size:11px;color:var(--text2);margin:4px 0 8px">Tip: after adding a route, add a Schedule for it so it appears in the app.</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-gold" onclick="closeModal();showToast('Route added!','green')">Add Route</button>
+      <button class="btn btn-gold" onclick="submitRoute()">Add Route</button>
     </div>`;
   document.getElementById('modal').classList.add('open');
+}
+async function submitRoute(){
+  const origin=val('rtOrigin'), destination=val('rtDest'), basePrice=val('rtPrice'), operatorId=val('rtOperator');
+  if(!origin||!destination){ showToast('Enter origin and destination','red'); return; }
+  if(!basePrice){ showToast('Enter a base price','red'); return; }
+  try {
+    const body={ origin, destination, basePrice }; if(operatorId) body.operatorId=operatorId;
+    await apiPost('/routes', body);
+    closeModal(); showToast('Route added','green');
+    liveRoutes = (await apiGet('/routes'))||[]; renderRoutes(); updateDashboard();
+  } catch(e){ showToast('Could not add route','red'); }
 }
 
 function openBusModal(){
   document.getElementById('modalTitle').textContent='Add New Bus';
   document.getElementById('modalBody').innerHTML=`
     <div class="form-row">
-      <div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Plate Number</label><input class="input" placeholder="e.g. GR-1234-22"/></div>
-      <div><label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Class</label><select class="input"><option>Regular</option><option>Executive</option></select></div>
+      <div><label style="${LBL}">Plate Number</label><input class="input" id="busPlate" placeholder="e.g. GR-1234-22"/></div>
+      <div><label style="${LBL}">Seat Capacity</label><input class="input" id="busCap" type="number" placeholder="45" value="45"/></div>
     </div>
-    <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Operator</label>
-    <select class="input"><option>VIP Bus Service</option><option>STC</option><option>GPRTU</option><option>Kingdom Transport</option><option>Metro Mass Transit</option><option>OA Travel</option></select>
-    <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Model</label>
-    <input class="input" placeholder="e.g. Hyundai Universe"/>
-    <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Seat Capacity</label>
-    <input class="input" type="number" placeholder="45" value="45"/>
+    <label style="${LBL}">Operator</label>
+    <select class="input" id="busOperator">${operatorOptions()}</select>
+    <label style="${LBL}">Model</label>
+    <input class="input" id="busModel" placeholder="e.g. VIP Executive (include “Exec” for executive class)"/>
+    <label style="${LBL}">Status</label>
+    <select class="input" id="busStatus"><option value="active">active</option><option value="maintenance">maintenance</option></select>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-gold" onclick="closeModal();showToast('Bus added to fleet!','green')">Add Bus</button>
+      <button class="btn btn-gold" onclick="submitBus()">Add Bus</button>
     </div>`;
   document.getElementById('modal').classList.add('open');
+}
+async function submitBus(){
+  const plateNumber=val('busPlate'), capacity=val('busCap'), operatorId=val('busOperator'), model=val('busModel'), status=val('busStatus');
+  if(!plateNumber){ showToast('Enter a plate number','red'); return; }
+  try {
+    const body={ plateNumber, capacity, model, status }; if(operatorId) body.operatorId=operatorId;
+    await apiPost('/buses', body);
+    closeModal(); showToast('Bus added to fleet','green');
+    liveBuses = (await apiGet('/buses'))||[]; renderBuses();
+  } catch(e){ showToast('Could not add bus','red'); }
 }
 
 function openDriverModal(){
   document.getElementById('modalTitle').textContent='Add New Driver';
   document.getElementById('modalBody').innerHTML=`
-    <input class="input" placeholder="Full Name"/>
-    <input class="input" placeholder="Phone Number (+233...)"/>
-    <input class="input" placeholder="License Number"/>
-    <select class="input"><option>VIP Bus Service</option><option>STC</option><option>GPRTU</option><option>OA Travel</option></select>
+    <label style="${LBL}">Full Name</label>
+    <input class="input" id="drvName" placeholder="e.g. Kwame Mensah"/>
+    <div class="form-row">
+      <div><label style="${LBL}">Phone Number</label><input class="input" id="drvPhone" placeholder="+233..."/></div>
+      <div><label style="${LBL}">License Number</label><input class="input" id="drvLicense" placeholder="GHA-DL-...."/></div>
+    </div>
+    <label style="${LBL}">Operator</label>
+    <select class="input" id="drvOperator">${operatorOptions()}</select>
+    <label style="${LBL}">Status</label>
+    <select class="input" id="drvStatus"><option value="active">active</option><option value="off-duty">off-duty</option></select>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-gold" onclick="closeModal();showToast('Driver added!','green')">Add Driver</button>
+      <button class="btn btn-gold" onclick="submitDriver()">Add Driver</button>
     </div>`;
   document.getElementById('modal').classList.add('open');
+}
+async function submitDriver(){
+  const name=val('drvName'), phone=val('drvPhone'), licenseNumber=val('drvLicense'), operatorId=val('drvOperator'), status=val('drvStatus');
+  if(!name){ showToast('Enter a name','red'); return; }
+  try {
+    const body={ name, phone, licenseNumber, status }; if(operatorId) body.operatorId=operatorId;
+    await apiPost('/drivers', body);
+    closeModal(); showToast('Driver added','green');
+    liveDrivers = (await apiGet('/drivers'))||[]; renderDrivers();
+  } catch(e){ showToast('Could not add driver','red'); }
 }
 
 function closeModal(){document.getElementById('modal').classList.remove('open');}
