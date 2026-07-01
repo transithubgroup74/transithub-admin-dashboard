@@ -804,17 +804,23 @@ function doLogin() {
     return;
   }
 
-  currentStaff = found;
   // Update last login
   found.last = 'Just now';
   saveStaffList(staff);
+  // Persist the session so refreshing the page doesn't log you out (12h expiry).
+  try { localStorage.setItem('th_session', JSON.stringify({ id: found.staffId, t: Date.now() })); } catch(e) {}
 
-  // Update topbar
+  enterDashboard(found);
+  showToast(`Welcome back, ${found.name.split(' ')[0]}! 👋`,'green');
+}
+
+// Shared post-auth setup — used by fresh logins AND restored sessions.
+function enterDashboard(found) {
+  currentStaff = found;
   const initials = found.name.split(' ').map(w=>w[0]).join('').toUpperCase();
   document.getElementById('topbarId').textContent   = found.staffId;
   document.getElementById('topbarName').textContent = found.name;
   document.getElementById('topbarAvatar').textContent = initials;
-  // Settings page
   document.getElementById('settingsAvatar').textContent   = initials;
   document.getElementById('settingsName').textContent     = found.name;
   document.getElementById('settingsEmail').textContent    = found.email;
@@ -826,13 +832,29 @@ function doLogin() {
 
   document.getElementById('loginScreen').classList.add('hidden');
   applyRolePermissions(found.role);
-  showToast(`Welcome back, ${found.name.split(' ')[0]}! 👋`,'green');
   loadAllData();
+}
+
+// On page load/refresh: restore a saved session if it's still valid.
+function restoreSession() {
+  try {
+    const raw = localStorage.getItem('th_session');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (!s || !s.id || (Date.now() - (s.t || 0)) > 12 * 60 * 60 * 1000) {
+      localStorage.removeItem('th_session');
+      return;
+    }
+    const staff = getStaffList().find(x => x.staffId === s.id && x.status === 'active');
+    if (!staff) { localStorage.removeItem('th_session'); return; }
+    enterDashboard(staff);
+  } catch(e) {}
 }
 
 function logout() {
   if (!confirm('Sign out of the admin panel?')) return;
   currentStaff = null;
+  try { localStorage.removeItem('th_session'); } catch(e) {}
   document.getElementById('loginId').value = '';
   document.getElementById('loginPw').value = '';
   document.getElementById('loginScreen').classList.remove('hidden');
@@ -1698,6 +1720,9 @@ function showToast(msg,type='green'){
   clearTimeout(t._to);
   t._to=setTimeout(()=>t.classList.add('hidden'),3000);
 }
+
+// Keep the user signed in across page refreshes.
+restoreSession();
 </script>
 </body>
 </html>
