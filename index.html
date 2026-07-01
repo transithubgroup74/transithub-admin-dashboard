@@ -555,25 +555,29 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
         <div class="card" style="text-align:center">
           <div class="card-title" style="justify-content:center">QR Ticket Scanner</div>
           <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Scan passenger QR codes to verify boarding</div>
-          <div class="scan-box" onclick="doScan()">
+          <div class="scan-box" id="scanIdle" onclick="startScanner()">
             📷
             <div class="scan-corner tl"></div><div class="scan-corner tr"></div>
             <div class="scan-corner bl"></div><div class="scan-corner br"></div>
             <div class="scan-line"></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-            <button class="btn btn-gold" onclick="simulateScan('valid')">✓ Valid Ticket</button>
-            <button class="btn btn-red" onclick="simulateScan('invalid')">✗ Invalid QR</button>
+          <div id="qrReader" style="display:none;max-width:320px;margin:0 auto 10px;border-radius:12px;overflow:hidden"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+            <button class="btn btn-gold" onclick="startScanner()">📷 Start Camera</button>
+            <button class="btn" style="background:var(--gray);color:#fff" onclick="stopScanner()">■ Stop</button>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <button class="btn" style="background:var(--orange);color:#020E1A" onclick="simulateScan('scanned')">⚠ Already Scanned</button>
-            <button class="btn" style="background:var(--gray);color:#fff" onclick="simulateScan('cancelled')">⊘ Cancelled</button>
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <input id="manualCode" placeholder="Or type ticket code, e.g. THB-2025-ACC…"
+              style="flex:1;background:var(--inputbg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:inherit;font-size:13px"
+              onkeydown="if(event.key==='Enter')verifyManual()">
+            <button class="btn btn-gold" onclick="verifyManual()">Verify</button>
           </div>
+          <div style="font-size:11px;color:var(--text2)">Camera works on the hosted link (HTTPS). On the desktop file, type the ticket code instead.</div>
           <div id="scanResult" style="margin-top:16px"></div>
         </div>
         <div class="card">
-          <div class="card-title">Scan Log — Today</div>
-          <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Total scanned: <strong style="color:var(--gold)" id="totalScanned">0</strong></div>
+          <div class="card-title">Scan Log</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Total boarded: <strong style="color:var(--gold)" id="totalScanned">—</strong></div>
           <div id="scanLog" style="max-height:400px;overflow-y:auto"></div>
         </div>
       </div>
@@ -1592,35 +1596,141 @@ function closeModal(){document.getElementById('modal').classList.remove('open');
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
 // ══════════════════════════════════════════
-// QR SCANNER
+// QR SCANNER — real camera + backend verification
+// (same verify-qr / complete endpoints the conductor app uses)
 // ══════════════════════════════════════════
-let scanCount=0;
-function doScan(){showToast('Camera scanning... use buttons to simulate','green');}
-function simulateScan(type){
-  scanCount++;
-  document.getElementById('totalScanned').textContent=scanCount;
-  const names=['Michael Mensah','Abena Osei','Kwame Asante','Kofi Mensah'];
-  const name=names[Math.floor(Math.random()*names.length)];
-  const seat=Math.floor(Math.random()*45)+1;
-  const time=new Date().toLocaleTimeString('en-GH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
-  let html='',log='';
-  if(type==='valid'){
-    html=`<div class="result-card result-valid"><div style="font-size:32px;margin-bottom:8px">✅</div><div style="font-size:18px;font-weight:700;color:var(--green);margin-bottom:8px">BOARDING APPROVED</div><div style="font-size:16px;font-weight:500">${name}</div><div style="font-size:13px;color:var(--text2)">Seat ${seat} · Kumasi → Accra · 06:00 AM</div><div style="font-size:11px;color:var(--text2);margin-top:6px">Scanned at ${time}</div></div>`;
-    log=`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span class="badge badge-green" style="margin-right:6px">✓</span><strong>${name}</strong> — Seat ${seat} — ${time}</div>`;
-  } else if(type==='invalid'){
-    html=`<div class="result-card result-invalid"><div style="font-size:32px;margin-bottom:8px">❌</div><div style="font-size:18px;font-weight:700;color:var(--red)">INVALID TICKET</div><div style="font-size:13px;color:var(--text2)">QR code not recognised.</div></div>`;
-    log=`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span class="badge badge-red" style="margin-right:6px">✗</span><strong>Invalid QR</strong> — ${time}</div>`;
-  } else if(type==='scanned'){
-    html=`<div class="result-card result-warned"><div style="font-size:32px;margin-bottom:8px">⚠️</div><div style="font-size:18px;font-weight:700;color:var(--orange)">ALREADY SCANNED</div><div style="font-size:13px;color:var(--text2)">Previously scanned. Contact supervisor.</div></div>`;
-    log=`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span class="badge badge-orange" style="margin-right:6px">⚠</span><strong>Already Scanned</strong> — ${time}</div>`;
-  } else {
-    html=`<div class="result-card result-invalid"><div style="font-size:32px;margin-bottom:8px">⊘</div><div style="font-size:18px;font-weight:700;color:var(--red)">TICKET CANCELLED</div><div style="font-size:13px;color:var(--text2)">Ticket was cancelled and cannot be used.</div></div>`;
-    log=`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span class="badge badge-red" style="margin-right:6px">⊘</span><strong>Cancelled Ticket</strong> — ${time}</div>`;
+let qrScanner = null, lastScanText = '', lastScanAt = 0;
+
+function scanLibReady(cb){
+  if (window.Html5Qrcode) return cb();
+  const s = document.createElement('script');
+  s.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+  s.onload = cb;
+  s.onerror = () => showToast('Could not load the camera library — check your internet','red');
+  document.head.appendChild(s);
+}
+
+function startScanner(){
+  scanLibReady(() => {
+    if (qrScanner) return;
+    document.getElementById('scanIdle').style.display = 'none';
+    document.getElementById('qrReader').style.display = 'block';
+    qrScanner = new Html5Qrcode('qrReader');
+    qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: 220 },
+      (text) => {
+        const now = Date.now();
+        if (text === lastScanText && now - lastScanAt < 4000) return; // ignore repeat frames of the same code
+        lastScanText = text; lastScanAt = now;
+        verifyTicket(text);
+      }, () => {})
+      .catch(() => {
+        qrScanner = null;
+        document.getElementById('scanIdle').style.display = '';
+        document.getElementById('qrReader').style.display = 'none';
+        showToast('Camera unavailable here — open the hosted link, or type the ticket code','red');
+      });
+  });
+}
+
+function stopScanner(){
+  if (!qrScanner) return;
+  try { qrScanner.stop().catch(()=>{}); } catch(e) {}
+  qrScanner = null;
+  const r = document.getElementById('qrReader'), i = document.getElementById('scanIdle');
+  if (r) { r.style.display = 'none'; r.innerHTML = ''; }
+  if (i) i.style.display = '';
+}
+
+// Scans done on THIS device (booking id -> time), kept for today only, so the
+// log can show when each passenger was boarded from here.
+function localScans(){
+  try {
+    const o = JSON.parse(localStorage.getItem('th_scans') || '{}');
+    return (o.day === new Date().toDateString()) ? (o.map || {}) : {};
+  } catch(e){ return {}; }
+}
+function rememberScan(id){
+  const map = localScans();
+  map[id] = new Date().toLocaleTimeString('en-GH',{hour:'2-digit',minute:'2-digit',hour12:true});
+  try { localStorage.setItem('th_scans', JSON.stringify({ day: new Date().toDateString(), map })); } catch(e) {}
+}
+
+async function verifyTicket(qrText){
+  const out = document.getElementById('scanResult');
+  out.innerHTML = '<div style="color:var(--text2);font-size:13px">Verifying…</div>';
+  let b;
+  try {
+    b = await apiPost('/bookings/verify-qr', { qrCode: qrText });
+  } catch(e) {
+    out.innerHTML = `<div class="result-card result-invalid"><div style="font-size:32px;margin-bottom:8px">❌</div><div style="font-size:18px;font-weight:700;color:var(--red)">INVALID TICKET</div><div style="font-size:13px;color:var(--text2)">This QR code is not in the system.</div></div>`;
+    showToast('❌ Invalid ticket','red');
+    return;
   }
-  document.getElementById('scanResult').innerHTML=html;
-  const el=document.getElementById('scanLog');
-  el.innerHTML=log+el.innerHTML;
-  showToast(type==='valid'?'✅ Boarding approved!':type==='invalid'?'❌ Invalid ticket':type==='scanned'?'⚠️ Already scanned':'⊘ Cancelled ticket',type==='valid'?'green':'red');
+  const time = new Date().toLocaleTimeString('en-GH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+  const detail = `<div style="font-size:16px;font-weight:500">${b.passenger||'—'}</div><div style="font-size:13px;color:var(--text2)">Seat ${b.seat||'—'} · ${b.route||''}</div>`;
+  if (b.status === 'confirmed') {
+    try { await apiPost('/bookings/' + b.id + '/complete', {}); } catch(e) {}
+    rememberScan(b.id);
+    out.innerHTML = `<div class="result-card result-valid"><div style="font-size:32px;margin-bottom:8px">✅</div><div style="font-size:18px;font-weight:700;color:var(--green);margin-bottom:8px">BOARDING APPROVED</div>${detail}<div style="font-size:11px;color:var(--text2);margin-top:6px">Scanned at ${time}</div></div>`;
+    showToast('✅ Boarding approved!','green');
+  } else if (b.status === 'completed') {
+    out.innerHTML = `<div class="result-card result-warned"><div style="font-size:32px;margin-bottom:8px">⚠️</div><div style="font-size:18px;font-weight:700;color:var(--orange)">ALREADY SCANNED</div>${detail}<div style="font-size:13px;color:var(--text2);margin-top:6px">This ticket has already been used to board.</div></div>`;
+    showToast('⚠️ Already scanned','red');
+  } else if (b.status === 'cancelled') {
+    out.innerHTML = `<div class="result-card result-invalid"><div style="font-size:32px;margin-bottom:8px">⊘</div><div style="font-size:18px;font-weight:700;color:var(--red)">TICKET CANCELLED</div>${detail}<div style="font-size:13px;color:var(--text2);margin-top:6px">This ticket was cancelled and cannot be used.</div></div>`;
+    showToast('⊘ Cancelled ticket','red');
+  } else {
+    out.innerHTML = `<div class="result-card result-warned"><div style="font-size:32px;margin-bottom:8px">⚠️</div><div style="font-size:18px;font-weight:700;color:var(--orange)">PAYMENT PENDING</div>${detail}<div style="font-size:13px;color:var(--text2);margin-top:6px">This booking has not been paid for yet.</div></div>`;
+    showToast('⚠️ Payment pending','red');
+  }
+  renderScanLog();
+}
+
+async function verifyManual(){
+  const raw = (document.getElementById('manualCode').value || '').trim();
+  if (!raw) return showToast('Type a ticket code first','red');
+  const code = raw.toUpperCase().replace(/\s+/g,'');
+  const out = document.getElementById('scanResult');
+  out.innerHTML = '<div style="color:var(--text2);font-size:13px">Looking up ticket…</div>';
+  try {
+    const all = await apiGet('/admin/bookings');
+    const hit = (all || []).find(b => {
+      const qr = String(b.qrCode || '').toUpperCase();
+      const tail = String(b.id || '').slice(-8).toUpperCase();
+      return (qr && qr.indexOf(code) !== -1) || code.replace('THB-','') === tail;
+    });
+    if (!hit || !hit.qrCode) {
+      out.innerHTML = `<div class="result-card result-invalid"><div style="font-size:32px;margin-bottom:8px">❌</div><div style="font-size:18px;font-weight:700;color:var(--red)">NO MATCH</div><div style="font-size:13px;color:var(--text2)">No ticket matches that code.</div></div>`;
+      showToast('❌ No ticket matches that code','red');
+      return;
+    }
+    document.getElementById('manualCode').value = '';
+    verifyTicket(hit.qrCode);
+  } catch(e) {
+    out.innerHTML = '<div style="color:var(--text2);font-size:13px">Could not reach the server — try again.</div>';
+  }
+}
+
+// Scan log = real boarded passengers (completed bookings), live from the backend.
+async function renderScanLog(){
+  const logEl = document.getElementById('scanLog');
+  const totEl = document.getElementById('totalScanned');
+  try {
+    const all = await apiGet('/admin/bookings');
+    const done = (all || []).filter(b => b.status === 'completed');
+    totEl.textContent = done.length;
+    if (!done.length) {
+      logEl.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0">No passengers boarded yet.</div>';
+      return;
+    }
+    const scans = localScans();
+    logEl.innerHTML = done.map(b =>
+      `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span class="badge badge-green" style="margin-right:6px">✓</span><strong>${b.passenger||'—'}</strong> — Seat ${b.seat||'—'} — ${b.route||''}${scans[b.id] ? ' — scanned '+scans[b.id] : ''}</div>`
+    ).join('');
+  } catch(e) {
+    totEl.textContent = '—';
+    logEl.innerHTML = '<div style="color:var(--text2);font-size:13px">Could not load the scan log.</div>';
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1659,6 +1769,7 @@ function showPage(id,el){
   if(id==='staff')renderStaff();
   if(id==='buses')renderBuses();
   if(id==='drivers')renderDrivers();
+  if(id==='scan')renderScanLog(); else stopScanner();
   if(id==='passengers')renderPassengers();
   if(id==='payments')renderPayments();
   if(id==='bookings')renderBookings();
