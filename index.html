@@ -342,11 +342,11 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
         </div>
         <div class="card">
           <div class="card-title">Booking Breakdown</div>
-          <div class="donut"><div class="donut-hole" id="donutTotal">—</div></div>
+          <div class="donut" id="donutRing"><div class="donut-hole" id="donutTotal">—</div></div>
           <div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Regular seats</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Executive seats</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Cancelled</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div><span id="legRegular">Regular seats</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div><span id="legExec">Executive seats</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div><span id="legCancelled">Cancelled</span></div>
           </div>
         </div>
       </div>
@@ -1013,6 +1013,7 @@ function normalizeBooking(b){
     status: b.status,
     createdAt: b.createdAt,
     operator: b.operator,   // company name — used for per-company scoping
+    busClass: b.busClass,   // Regular/Executive — used by the breakdown donut
   };
 }
 
@@ -1068,6 +1069,25 @@ function updateDashboard() {
   const totalRev = paid.reduce((s,b)=>s+(parseFloat(b.totalAmount)||0),0);
   document.getElementById('statRevenue').textContent   = 'GHS '+totalRev.toFixed(0);
   document.getElementById('donutTotal').textContent    = liveBookings.length || '0';
+
+  // Booking Breakdown donut — segments computed from the live bookings.
+  const dCancelled = liveBookings.filter(b => b.status === 'cancelled').length;
+  const dExec = liveBookings.filter(b => b.status !== 'cancelled' && /exec/i.test(b.busClass || '')).length;
+  const dReg = Math.max(0, liveBookings.length - dCancelled - dExec);
+  const ring = document.getElementById('donutRing');
+  if (ring) {
+    if (!liveBookings.length) {
+      ring.style.background = 'conic-gradient(var(--border) 0deg 360deg)';
+    } else {
+      const d1 = dReg / liveBookings.length * 360;
+      const d2 = d1 + dExec / liveBookings.length * 360;
+      ring.style.background = `conic-gradient(var(--gold) 0deg ${d1}deg, var(--green) ${d1}deg ${d2}deg, var(--red) ${d2}deg 360deg)`;
+    }
+  }
+  const setLeg = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  setLeg('legRegular', `Regular seats (${dReg})`);
+  setLeg('legExec', `Executive seats (${dExec})`);
+  setLeg('legCancelled', `Cancelled (${dCancelled})`);
 
   // Revenue page summary cards (today / week / month / total)
   const now = new Date();
