@@ -661,8 +661,8 @@ const DEFAULT_STAFF = [
   {staffId:'OA-OP-05',  name:'Yaw Darko',       email:'yaw@oaexpress.com',            role:'Operator',    company:'OA Express',          password:'yaw2025',     last:'Today, 06:15 AM',     status:'active'},
   {staffId:'OA-CN-06',  name:'Kojo Antwi',      email:'kojo@oaexpress.com',           role:'Conductor',   company:'OA Express',          password:'kojo2025',    last:'Today, 05:50 AM',     status:'active'},
   // STC
-  {staffId:'STC-OP-07', name:'Grace Appiah',    email:'grace@stc.com.gh',             role:'Operator',    company:'STC',                 password:'grace2025',   last:'Today, 07:00 AM',     status:'active'},
-  {staffId:'STC-CN-08', name:'Akosua Frimpong', email:'akosua@stc.com.gh',            role:'Conductor',   company:'STC',                 password:'akosua2025',  last:'Today, 06:05 AM',     status:'active'},
+  {staffId:'STC-OP-07', name:'Grace Appiah',    email:'grace@stc.com.gh',             role:'Operator',    company:'STC Coaches',                 password:'grace2025',   last:'Today, 07:00 AM',     status:'active'},
+  {staffId:'STC-CN-08', name:'Akosua Frimpong', email:'akosua@stc.com.gh',            role:'Conductor',   company:'STC Coaches',                 password:'akosua2025',  last:'Today, 06:05 AM',     status:'active'},
   // Kingdom Transport
   {staffId:'KGD-OP-09', name:'Daniel Owusu',    email:'daniel@kingdomtransport.com',  role:'Operator',    company:'Kingdom Transport',   password:'daniel2025',  last:'Today, 06:30 AM',     status:'active'},
   {staffId:'KGD-CN-10', name:'Esi Boateng',     email:'esi@kingdomtransport.com',     role:'Conductor',   company:'Kingdom Transport',   password:'esi2025',     last:'Today, 06:10 AM',     status:'active'},
@@ -674,7 +674,7 @@ const DEFAULT_STAFF = [
   {staffId:'MMT-CN-14', name:'Joyce Adu',       email:'joyce@metromass.gov.gh',       role:'Conductor',   company:'Metro Mass Transit',  password:'joyce2025',   last:'Yesterday',           status:'active'},
 ];
 
-const STAFF_VER = 'v5';
+const STAFF_VER = 'v6';
 function getStaffList() {
   try {
     const saved = localStorage.getItem('th_staff');
@@ -876,6 +876,7 @@ async function loadAllData() {
     apiOnline = true;
     document.getElementById('apiBadge').className = 'api-badge';
     document.getElementById('apiBadge').textContent = '● Live';
+    applyCompanyScope();
     updateDashboard();
     renderRoutes();
     renderSchedules();
@@ -913,6 +914,7 @@ async function loadAllData() {
   } catch(e) {
     liveBuses = []; liveDrivers = []; liveOperators = [];
   }
+  applyCompanyScope();
   updateDashboard();
   renderBookings();
   renderPassengers();
@@ -923,6 +925,27 @@ async function loadAllData() {
 // Hide the throwaway accounts created while testing the backend.
 function isTestAccount(email){
   return /^(synctest_|review_)/i.test(String(email || ''));
+}
+
+// ── Per-company data scoping ──────────────────────────────────────────────
+// HQ roles (Super Admin, Manager) oversee every company; Operators & Conductors
+// see only their OWN company's data. Applied in-place to the live* arrays right
+// after they load, so every downstream render/stat automatically reflects the
+// scoped set — no render code needs to change.
+function companyScoped(){
+  return !!currentStaff && currentStaff.role !== 'Super Admin' && currentStaff.role !== 'Manager';
+}
+function sameCompany(c){
+  return String(c || '').trim().toLowerCase()
+      === String((currentStaff && currentStaff.company) || '').trim().toLowerCase();
+}
+function applyCompanyScope(){
+  if(!companyScoped()) return;
+  liveBookings  = (liveBookings  || []).filter(b => sameCompany(b.operator));
+  liveRoutes    = (liveRoutes    || []).filter(r => sameCompany(r.operator && r.operator.companyName));
+  liveSchedules = (liveSchedules || []).filter(s => sameCompany(s.route && s.route.operator && s.route.operator.companyName));
+  liveBuses     = (liveBuses     || []).filter(b => sameCompany(b.company));
+  liveDrivers   = (liveDrivers   || []).filter(d => sameCompany(d.company));
 }
 
 // The admin endpoint returns a flat booking; map it to the nested shape the
@@ -950,6 +973,7 @@ function normalizeBooking(b){
     totalAmount: b.amount,
     status: b.status,
     createdAt: b.createdAt,
+    operator: b.operator,   // company name — used for per-company scoping
   };
 }
 
@@ -1190,7 +1214,7 @@ function showStaffId(id, name) {
 const DEMO_BUSES = [
   {plate:'GR-1234-22',company:'VIP Bus Service',model:'Hyundai Universe',cap:45,status:'active'},
   {plate:'GR-5678-22',company:'VIP Jeoun Executive',model:'Volvo 9700',cap:30,status:'active'},
-  {plate:'GR-9012-21',company:'STC',model:'Mercedes Tourismo',cap:45,status:'active'},
+  {plate:'GR-9012-21',company:'STC Coaches',model:'Mercedes Tourismo',cap:45,status:'active'},
   {plate:'GR-7890-20',company:'GPRTU',model:'Yutong ZK6122H',cap:45,status:'maintenance'},
   {plate:'GR-0123-23',company:'Kingdom Transport',model:'Scania Touring HD',cap:30,status:'active'},
 ];
@@ -1233,7 +1257,7 @@ async function deleteBus(id, plate){
 const DEMO_DRIVERS = [
   {name:'Kofi Agyemang',phone:'+233 24 111 2222',company:'VIP Bus Service',licenseNumber:'DRV-2021-001',status:'active'},
   {name:'Yaw Mensah',phone:'+233 20 333 4444',company:'VIP Jeoun Exec',licenseNumber:'DRV-2020-002',status:'active'},
-  {name:'Kweku Asante',phone:'+233 24 555 6666',company:'STC',licenseNumber:'DRV-2019-003',status:'active'},
+  {name:'Kweku Asante',phone:'+233 24 555 6666',company:'STC Coaches',licenseNumber:'DRV-2019-003',status:'active'},
   {name:'Fiifi Boateng',phone:'+233 26 999 0000',company:'GPRTU',licenseNumber:'DRV-2018-005',status:'off-duty'},
 ];
 function renderDrivers() {
@@ -1434,7 +1458,7 @@ async function submitSchedule(){
   try {
     await apiPost('/schedules', { routeId, departsAt: `${date}T${time}` });
     closeModal(); showToast('Schedule added — live in the app','green');
-    liveSchedules = ((await apiGet('/admin/schedules'))||[]).map(normalizeSchedule); renderSchedules(); updateDashboard();
+    liveSchedules = ((await apiGet('/admin/schedules'))||[]).map(normalizeSchedule); applyCompanyScope(); renderSchedules(); updateDashboard();
   } catch(e){ showToast('Could not add schedule','red'); }
 }
 
@@ -1464,7 +1488,7 @@ async function submitRoute(){
     const body={ origin, destination, basePrice }; if(operatorId) body.operatorId=operatorId;
     await apiPost('/routes', body);
     closeModal(); showToast('Route added','green');
-    liveRoutes = (await apiGet('/routes'))||[]; renderRoutes(); updateDashboard();
+    liveRoutes = (await apiGet('/routes'))||[]; applyCompanyScope(); renderRoutes(); updateDashboard();
   } catch(e){ showToast('Could not add route','red'); }
 }
 
@@ -1494,7 +1518,7 @@ async function submitBus(){
     const body={ plateNumber, capacity, model, status }; if(operatorId) body.operatorId=operatorId;
     await apiPost('/buses', body);
     closeModal(); showToast('Bus added to fleet','green');
-    liveBuses = (await apiGet('/buses'))||[]; renderBuses();
+    liveBuses = (await apiGet('/buses'))||[]; applyCompanyScope(); renderBuses();
   } catch(e){ showToast('Could not add bus','red'); }
 }
 
@@ -1524,7 +1548,7 @@ async function submitDriver(){
     const body={ name, phone, licenseNumber, status }; if(operatorId) body.operatorId=operatorId;
     await apiPost('/drivers', body);
     closeModal(); showToast('Driver added','green');
-    liveDrivers = (await apiGet('/drivers'))||[]; renderDrivers();
+    liveDrivers = (await apiGet('/drivers'))||[]; applyCompanyScope(); renderDrivers();
   } catch(e){ showToast('Could not add driver','red'); }
 }
 
