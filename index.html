@@ -611,8 +611,7 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
         <div class="card">
           <div class="card-title">Notification History</div>
           <div id="notiHistory">
-            <div style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:500">Route Delay — Kumasi → Accra</div><div style="font-size:12px;color:var(--text2);margin:4px 0">The 06:00 AM departure is delayed by 30 minutes.</div><div style="display:flex;justify-content:space-between"><span class="badge badge-orange">Route Delay</span><span style="font-size:11px;color:var(--text2)">Today, 05:30 AM · 89 recipients</span></div></div>
-            <div style="padding:12px 0"><div style="font-size:13px;font-weight:500">Weekend Promo — 10% off Executive</div><div style="font-size:12px;color:var(--text2);margin:4px 0">Book any Executive seat this weekend and get 10% off. Use code EXEC10.</div><div style="display:flex;justify-content:space-between"><span class="badge badge-gold">Promotion</span><span style="font-size:11px;color:var(--text2)">Yesterday · 1,284 recipients</span></div></div>
+            <div style="color:var(--text2);font-size:13px;padding:8px 0">Loading…</div>
           </div>
         </div>
       </div>
@@ -1736,15 +1735,52 @@ async function renderScanLog(){
 // ══════════════════════════════════════════
 // NOTIFICATIONS
 // ══════════════════════════════════════════
-function sendNotification(){
-  const title=document.getElementById('notiTitle').value;
-  const msg=document.getElementById('notiMsg').value;
+// Sends a REAL alert to the backend — passengers see it in the app's
+// notifications tab the next time they open the app.
+async function sendNotification(){
+  const title=document.getElementById('notiTitle').value.trim();
+  const msg=document.getElementById('notiMsg').value.trim();
   if(!title||!msg){showToast('Please fill in title and message','red');return;}
+  try {
+    await apiPost('/alerts', {
+      title, message: msg,
+      type: document.getElementById('notiType').value,
+      audience: document.getElementById('notiAudience').value,
+      sentBy: (currentStaff ? currentStaff.staffId + ' · ' + currentStaff.name : '—'),
+    });
+    document.getElementById('notiTitle').value='';
+    document.getElementById('notiMsg').value='';
+    showToast('Alert sent to passengers! 📤','green');
+    renderAlertHistory();
+  } catch(e) {
+    showToast('Could not send — check your connection','red');
+  }
+}
+
+const ALERT_BADGES = { 'Route Delay':'badge-orange', 'Route Cancellation':'badge-red', 'Departure Reminder':'badge-green', 'Promotion':'badge-gold' };
+function alertBadgeClass(type){
+  const t = String(type||'');
+  for (const k in ALERT_BADGES) if (t.indexOf(k) !== -1) return ALERT_BADGES[k];
+  return 'badge-green';
+}
+
+// Real sent-alert history from the backend (shared across all staff).
+async function renderAlertHistory(){
   const hist=document.getElementById('notiHistory');
-  hist.innerHTML=`<div style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:500">${title}</div><div style="font-size:12px;color:var(--text2);margin:4px 0">${msg}</div><div style="display:flex;justify-content:space-between"><span class="badge badge-green">Sent</span><span style="font-size:11px;color:var(--text2)">Just now · Sent by ${currentStaff?.staffId||'—'}</span></div></div>`+hist.innerHTML;
-  document.getElementById('notiTitle').value='';
-  document.getElementById('notiMsg').value='';
-  showToast('Notification sent!','green');
+  try {
+    const alerts = await apiGet('/alerts');
+    if (!alerts || !alerts.length) {
+      hist.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0">No alerts sent yet.</div>';
+      return;
+    }
+    hist.innerHTML = alerts.map(a => {
+      const when = a.createdAt ? new Date(a.createdAt).toLocaleString('en-GH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true}) : '';
+      const label = String(a.type||'Announcement').replace(/^[^A-Za-z]+/,'');
+      return `<div style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:500">${a.title}</div><div style="font-size:12px;color:var(--text2);margin:4px 0">${a.message}</div><div style="display:flex;justify-content:space-between"><span class="badge ${alertBadgeClass(a.type)}">${label}</span><span style="font-size:11px;color:var(--text2)">${when} · ${a.sentBy||'—'}</span></div></div>`;
+    }).join('');
+  } catch(e) {
+    hist.innerHTML = '<div style="color:var(--text2);font-size:13px">Could not load alert history.</div>';
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1770,6 +1806,7 @@ function showPage(id,el){
   if(id==='buses')renderBuses();
   if(id==='drivers')renderDrivers();
   if(id==='scan')renderScanLog(); else stopScanner();
+  if(id==='notifications')renderAlertHistory();
   if(id==='passengers')renderPassengers();
   if(id==='payments')renderPayments();
   if(id==='bookings')renderBookings();
