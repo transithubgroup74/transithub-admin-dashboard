@@ -587,7 +587,14 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
     <div class="page" id="page-notifications">
       <div class="grid-2">
         <div class="card">
-          <div class="card-title">Send Push Notification</div>
+          <div class="card-title">Send Notification</div>
+          <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Quick Templates</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+            <button class="btn btn-sm btn-outline" onclick="applyTemplate('delay')">⚠️ Delay</button>
+            <button class="btn btn-sm btn-outline" onclick="applyTemplate('cancel')">❌ Cancellation</button>
+            <button class="btn btn-sm btn-outline" onclick="applyTemplate('reminder')">✅ Reminder</button>
+            <button class="btn btn-sm btn-outline" onclick="applyTemplate('promo')">🎉 Promo</button>
+          </div>
           <label style="font-size:12px;color:var(--text2);margin-bottom:4px;display:block">Target Audience</label>
           <select class="input" id="notiAudience">
             <option>All Passengers</option>
@@ -1755,12 +1762,27 @@ async function renderScanLog(){
 // ══════════════════════════════════════════
 // NOTIFICATIONS
 // ══════════════════════════════════════════
+// One-tap prefills for the common alert types — tweak the details and send.
+const ALERT_TEMPLATES = {
+  delay:    { type: '⚠️ Route Delay',        title: 'Departure Delay',    msg: 'The 2:00 PM Accra → Kumasi departure is delayed by 30 minutes. We apologise for the inconvenience.' },
+  cancel:   { type: '❌ Route Cancellation',  title: 'Trip Cancelled',     msg: 'The 2:00 PM Accra → Kumasi departure has been cancelled. Affected passengers will be rebooked at no extra cost.' },
+  reminder: { type: '✅ Departure Reminder',  title: 'Departure Reminder', msg: 'Your bus departs soon. Please arrive at the terminal 30 minutes early with your QR ticket ready.' },
+  promo:    { type: '🎉 Promotion',           title: 'Weekend Promo',      msg: 'Book any Executive seat this weekend and enjoy 10% off. Limited seats available!' },
+};
+function applyTemplate(k){
+  const t = ALERT_TEMPLATES[k]; if (!t) return;
+  document.getElementById('notiType').value = t.type;
+  document.getElementById('notiTitle').value = t.title;
+  document.getElementById('notiMsg').value = t.msg;
+}
+
 // Sends a REAL alert to the backend — passengers see it in the app's
 // notifications tab the next time they open the app.
 async function sendNotification(){
   const title=document.getElementById('notiTitle').value.trim();
   const msg=document.getElementById('notiMsg').value.trim();
   if(!title||!msg){showToast('Please fill in title and message','red');return;}
+  if(!confirm('Send this alert to all passengers?\n\n"'+title+'"')) return;
   try {
     await apiPost('/alerts', {
       title, message: msg,
@@ -1796,10 +1818,21 @@ async function renderAlertHistory(){
     hist.innerHTML = alerts.map(a => {
       const when = a.createdAt ? new Date(a.createdAt).toLocaleString('en-GH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true}) : '';
       const label = String(a.type||'Announcement').replace(/^[^A-Za-z]+/,'');
-      return `<div style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:500">${a.title}</div><div style="font-size:12px;color:var(--text2);margin:4px 0">${a.message}</div><div style="display:flex;justify-content:space-between"><span class="badge ${alertBadgeClass(a.type)}">${label}</span><span style="font-size:11px;color:var(--text2)">${when} · ${a.sentBy||'—'}</span></div></div>`;
+      return `<div style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:13px;font-weight:500">${a.title}</div><button onclick="deleteAlert('${a.id}')" title="Delete alert" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 6px">✕</button></div><div style="font-size:12px;color:var(--text2);margin:4px 0">${a.message}</div><div style="display:flex;justify-content:space-between"><span class="badge ${alertBadgeClass(a.type)}">${label}</span><span style="font-size:11px;color:var(--text2)">${when} · ${a.sentBy||'—'}</span></div></div>`;
     }).join('');
   } catch(e) {
     hist.innerHTML = '<div style="color:var(--text2);font-size:13px">Could not load alert history.</div>';
+  }
+}
+
+async function deleteAlert(id){
+  if(!confirm('Delete this alert? Passengers whose apps have not synced it yet will no longer receive it.')) return;
+  try {
+    await apiDelete('/alerts/' + id);
+    showToast('Alert deleted','green');
+    renderAlertHistory();
+  } catch(e) {
+    showToast('Could not delete the alert','red');
   }
 }
 
