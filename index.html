@@ -132,8 +132,20 @@ textarea.input{color:#ffffff !important;-webkit-text-fill-color:#ffffff !importa
 .api-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,201,167,.12);border:1px solid rgba(0,201,167,.25);color:var(--green);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:600}
 .api-badge.offline{background:rgba(255,165,2,.1);border-color:rgba(255,165,2,.3);color:var(--orange)}
 @media(max-width:900px){.stats-grid{grid-template-columns:1fr 1fr}.grid-2{grid-template-columns:1fr}.sidebar{width:60px}.sidebar-logo .logo-text,.sidebar-logo .logo-sub,.nav-item span,.sidebar-section{display:none}.main{margin-left:60px}}
-/* ── PHONE (≤600px): tables scroll within their card instead of squishing ── */
+/* ── Hamburger + drawer (phones) ── */
+.menu-btn{display:none;background:none;border:none;color:var(--text);font-size:20px;padding:4px 12px 4px 0;cursor:pointer;line-height:1}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+/* ── PHONE (≤600px): sidebar becomes a slide-in drawer; tables scroll in cards ── */
 @media(max-width:600px){
+  .menu-btn{display:block}
+  .sidebar{width:232px;transform:translateX(-100%);transition:transform .25s ease}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-backdrop.show{display:block}
+  .sidebar-logo .logo-text,.sidebar-logo .logo-sub{display:block}
+  .nav-item span{display:inline}
+  .sidebar-section{display:block}
+  .main{margin-left:0}
+  .time-badge{display:none}
   .content{padding:12px}
   .topbar{padding:0 12px}
   .staff-chip-name{display:none}
@@ -275,8 +287,10 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
 <!-- ══════════════════════════════════════════════
      MAIN
 ══════════════════════════════════════════════ -->
+<div class="sidebar-backdrop" id="sbBackdrop" onclick="toggleSidebar(false)"></div>
 <div class="main">
   <div class="topbar">
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
     <div class="page-title" id="pageTitle">Dashboard</div>
     <div class="topbar-right">
       <div id="apiBadge" class="api-badge offline">● Connecting...</div>
@@ -1626,7 +1640,16 @@ function sendNotification(){
 // ══════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════
+// Phone drawer: open/close the sidebar (hamburger + backdrop).
+function toggleSidebar(force){
+  const sb=document.querySelector('.sidebar'), bd=document.getElementById('sbBackdrop');
+  const open = typeof force==='boolean' ? force : !sb.classList.contains('open');
+  sb.classList.toggle('open', open);
+  bd.classList.toggle('show', open);
+}
+
 function showPage(id,el){
+  toggleSidebar(false);
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
