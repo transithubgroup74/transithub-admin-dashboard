@@ -647,8 +647,8 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
           </div>
           <input class="input" id="settingsNameInput" placeholder="Full Name"/>
           <input class="input" id="settingsEmailInput" placeholder="Email"/>
-          <input class="input" type="password" placeholder="New Password (leave blank to keep current)"/>
-          <button class="btn btn-gold" onclick="showToast('Profile updated!','green')">Save Changes</button>
+          <input class="input" type="password" id="settingsPwInput" placeholder="New Password (leave blank to keep current)"/>
+          <button class="btn btn-gold" onclick="saveProfile()">Save Changes</button>
         </div>
         <div class="card">
           <div class="card-title">App Settings</div>
@@ -873,6 +873,33 @@ function restoreSession() {
     if (!staff) { localStorage.removeItem('th_session'); return; }
     enterDashboard(staff);
   } catch(e) {}
+}
+
+// Settings -> Save Changes: persists name/email (and optionally a new
+// password) to this staff's record in the local staff store.
+function saveProfile() {
+  if (!currentStaff) return;
+  const name = document.getElementById('settingsNameInput').value.trim();
+  const email = document.getElementById('settingsEmailInput').value.trim();
+  const pw = document.getElementById('settingsPwInput').value;
+  if (!name || !email) { showToast('Name and email cannot be empty','red'); return; }
+  if (pw && pw.length < 6) { showToast('New password must be at least 6 characters','red'); return; }
+  const staff = getStaffList();
+  const rec = staff.find(s => s.staffId === currentStaff.staffId);
+  if (!rec) { showToast('Could not find your staff record','red'); return; }
+  rec.name = name;
+  rec.email = email;
+  if (pw) rec.password = pw;
+  saveStaffList(staff);
+  currentStaff = rec;
+  const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase();
+  document.getElementById('topbarName').textContent = name;
+  document.getElementById('topbarAvatar').textContent = initials;
+  document.getElementById('settingsAvatar').textContent = initials;
+  document.getElementById('settingsName').textContent = name;
+  document.getElementById('settingsEmail').textContent = email;
+  document.getElementById('settingsPwInput').value = '';
+  showToast(pw ? 'Profile updated — use your new password next login' : 'Profile updated!','green');
 }
 
 function logout() {
