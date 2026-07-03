@@ -672,33 +672,28 @@ const API = 'https://transithub-backend-production.up.railway.app/api';
 let apiOnline = false;
 
 // ══════════════════════════════════════════
-// STAFF ACCOUNTS (stored in localStorage so new ones persist)
+// STAFF ACCOUNTS — display metadata only (staff IDs/names/roles are on ID
+// badges, not secret). Passwords now live on the backend (bcrypt) and are
+// checked at /api/staff/login. NO passwords here anymore.
 // ══════════════════════════════════════════
 const DEFAULT_STAFF = [
-  // TransitHub HQ
-  {staffId:'HQ-AD-01',  name:'Kwame Mensah',    email:'admin@transithub.com',         role:'Super Admin', company:'TransitHub HQ',       password:'admin123',    last:'Today, 08:00 AM',     status:'active'},
-  {staffId:'HQ-MG-02',  name:'Sarah Owusu',     email:'sarah@transithub.com',         role:'Manager',     company:'TransitHub HQ',       password:'sarah2025',   last:'Today, 07:30 AM',     status:'active'},
-  // VIP Jeoun
-  {staffId:'VIP-OP-03', name:'Ben Quartey',     email:'ben@vipjeoun.com',             role:'Operator',    company:'VIP Jeoun',           password:'ben2025',     last:'Today, 06:00 AM',     status:'active'},
-  {staffId:'VIP-CN-04', name:'Emmanuel Asare',  email:'emmanuel@vipjeoun.com',        role:'Conductor',   company:'VIP Jeoun',           password:'emma2025',    last:'Today, 05:45 AM',     status:'active'},
-  // OA Express
-  {staffId:'OA-OP-05',  name:'Yaw Darko',       email:'yaw@oaexpress.com',            role:'Operator',    company:'OA Express',          password:'yaw2025',     last:'Today, 06:15 AM',     status:'active'},
-  {staffId:'OA-CN-06',  name:'Kojo Antwi',      email:'kojo@oaexpress.com',           role:'Conductor',   company:'OA Express',          password:'kojo2025',    last:'Today, 05:50 AM',     status:'active'},
-  // STC
-  {staffId:'STC-OP-07', name:'Grace Appiah',    email:'grace@stc.com.gh',             role:'Operator',    company:'STC Coaches',                 password:'grace2025',   last:'Today, 07:00 AM',     status:'active'},
-  {staffId:'STC-CN-08', name:'Akosua Frimpong', email:'akosua@stc.com.gh',            role:'Conductor',   company:'STC Coaches',                 password:'akosua2025',  last:'Today, 06:05 AM',     status:'active'},
-  // Kingdom Transport
-  {staffId:'KGD-OP-09', name:'Daniel Owusu',    email:'daniel@kingdomtransport.com',  role:'Operator',    company:'Kingdom Transport',   password:'daniel2025',  last:'Today, 06:30 AM',     status:'active'},
-  {staffId:'KGD-CN-10', name:'Esi Boateng',     email:'esi@kingdomtransport.com',     role:'Conductor',   company:'Kingdom Transport',   password:'esi2025',     last:'Today, 06:10 AM',     status:'active'},
-  // Night Rider Express
-  {staffId:'NR-OP-11',  name:'Samuel Adjei',    email:'samuel@nightrider.com',        role:'Operator',    company:'Night Rider Express', password:'samuel2025',  last:'Today, 09:00 PM',     status:'active'},
-  {staffId:'NR-CN-12',  name:'Comfort Agyei',   email:'comfort@nightrider.com',       role:'Conductor',   company:'Night Rider Express', password:'comfort2025', last:'Yesterday, 10:00 PM', status:'active'},
-  // Metro Mass Transit
-  {staffId:'MMT-OP-13', name:'Joseph Tetteh',   email:'joseph@metromass.gov.gh',      role:'Operator',    company:'Metro Mass Transit',  password:'joseph2025',  last:'Today, 07:15 AM',     status:'active'},
-  {staffId:'MMT-CN-14', name:'Joyce Adu',       email:'joyce@metromass.gov.gh',       role:'Conductor',   company:'Metro Mass Transit',  password:'joyce2025',   last:'Yesterday',           status:'active'},
+  {staffId:'HQ-AD-01',  name:'Kwame Mensah',    email:'admin@transithub.com',         role:'Super Admin', company:'TransitHub HQ',       last:'Today, 08:00 AM',     status:'active'},
+  {staffId:'HQ-MG-02',  name:'Sarah Owusu',     email:'sarah@transithub.com',         role:'Manager',     company:'TransitHub HQ',       last:'Today, 07:30 AM',     status:'active'},
+  {staffId:'VIP-OP-03', name:'Ben Quartey',     email:'ben@vipjeoun.com',             role:'Operator',    company:'VIP Jeoun',           last:'Today, 06:00 AM',     status:'active'},
+  {staffId:'VIP-CN-04', name:'Emmanuel Asare',  email:'emmanuel@vipjeoun.com',        role:'Conductor',   company:'VIP Jeoun',           last:'Today, 05:45 AM',     status:'active'},
+  {staffId:'OA-OP-05',  name:'Yaw Darko',       email:'yaw@oaexpress.com',            role:'Operator',    company:'OA Express',          last:'Today, 06:15 AM',     status:'active'},
+  {staffId:'OA-CN-06',  name:'Kojo Antwi',      email:'kojo@oaexpress.com',           role:'Conductor',   company:'OA Express',          last:'Today, 05:50 AM',     status:'active'},
+  {staffId:'STC-OP-07', name:'Grace Appiah',    email:'grace@stc.com.gh',             role:'Operator',    company:'STC Coaches',         last:'Today, 07:00 AM',     status:'active'},
+  {staffId:'STC-CN-08', name:'Akosua Frimpong', email:'akosua@stc.com.gh',            role:'Conductor',   company:'STC Coaches',         last:'Today, 06:05 AM',     status:'active'},
+  {staffId:'KGD-OP-09', name:'Daniel Owusu',    email:'daniel@kingdomtransport.com',  role:'Operator',    company:'Kingdom Transport',   last:'Today, 06:30 AM',     status:'active'},
+  {staffId:'KGD-CN-10', name:'Esi Boateng',     email:'esi@kingdomtransport.com',     role:'Conductor',   company:'Kingdom Transport',   last:'Today, 06:10 AM',     status:'active'},
+  {staffId:'NR-OP-11',  name:'Samuel Adjei',    email:'samuel@nightrider.com',        role:'Operator',    company:'Night Rider Express', last:'Today, 09:00 PM',     status:'active'},
+  {staffId:'NR-CN-12',  name:'Comfort Agyei',   email:'comfort@nightrider.com',       role:'Conductor',   company:'Night Rider Express', last:'Yesterday, 10:00 PM', status:'active'},
+  {staffId:'MMT-OP-13', name:'Joseph Tetteh',   email:'joseph@metromass.gov.gh',      role:'Operator',    company:'Metro Mass Transit',  last:'Today, 07:15 AM',     status:'active'},
+  {staffId:'MMT-CN-14', name:'Joyce Adu',       email:'joyce@metromass.gov.gh',       role:'Conductor',   company:'Metro Mass Transit',  last:'Yesterday',           status:'active'},
 ];
 
-const STAFF_VER = 'v6';
+const STAFF_VER = 'v7';
 function getStaffList() {
   try {
     const saved = localStorage.getItem('th_staff');
@@ -805,37 +800,43 @@ function togglePw() {
   togglePwInput('loginPw', document.getElementById('pwEye'));
 }
 
-function doLogin() {
+// Login is now validated on the backend (bcrypt). No passwords live here.
+async function doLogin() {
   var id  = (document.getElementById('loginId').value || '').trim().toUpperCase();
   var pw  = document.getElementById('loginPw').value || '';
   var err = document.getElementById('loginErr');
   err.style.display = 'none';
-
-  var staff = DEFAULT_STAFF;
-  try { var saved = localStorage.getItem('th_staff'); if (saved) staff = JSON.parse(saved); } catch(e) {}
-
-  var found = null;
-  for (var i = 0; i < staff.length; i++) {
-    if (staff[i].staffId === id && staff[i].password === pw && staff[i].status === 'active') {
-      found = staff[i]; break;
+  if (!id || !pw) { err.textContent = 'Enter your Staff ID and password.'; err.style.display = 'block'; return; }
+  try {
+    const res = await fetch(API + '/staff/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ staffId: id, password: pw }),
+    });
+    if (!res.ok) {
+      err.textContent = 'Invalid Staff ID or password. Please try again.';
+      err.style.display = 'block';
+      document.getElementById('loginPw').value = '';
+      return;
     }
-  }
-
-  if (!found) {
-    err.textContent = 'Invalid Staff ID or password. Please try again.';
+    const data = await res.json();
+    authToken = data.token;
+    const found = { staffId: data.staffId, name: data.name, email: data.email, role: data.role, company: data.company };
+    try { localStorage.setItem('th_session', JSON.stringify({ token: data.token, staff: found, t: Date.now() })); } catch(e) {}
+    enterDashboard(found);
+    showToast(`Welcome back, ${found.name.split(' ')[0]}! 👋`, 'green');
+  } catch(e) {
+    err.textContent = 'Could not reach the server. Check your connection and try again.';
     err.style.display = 'block';
-    document.getElementById('loginPw').value = '';
-    return;
   }
+}
 
-  // Update last login
-  found.last = 'Just now';
-  saveStaffList(staff);
-  // Persist the session so refreshing the page doesn't log you out (12h expiry).
-  try { localStorage.setItem('th_session', JSON.stringify({ id: found.staffId, t: Date.now() })); } catch(e) {}
-
-  enterDashboard(found);
-  showToast(`Welcome back, ${found.name.split(' ')[0]}! 👋`,'green');
+// Token missing/expired mid-session → back to the login screen.
+let _reLoginShown = false;
+function forceReLogin() {
+  authToken = null; currentStaff = null;
+  try { localStorage.removeItem('th_session'); } catch(e) {}
+  document.getElementById('loginScreen').classList.remove('hidden');
+  if (!_reLoginShown) { _reLoginShown = true; showToast('Session expired — please sign in again','red'); setTimeout(()=>{ _reLoginShown = false; }, 4000); }
 }
 
 // Shared post-auth setup — used by fresh logins AND restored sessions.
@@ -859,52 +860,55 @@ function enterDashboard(found) {
   loadAllData();
 }
 
-// On page load/refresh: restore a saved session if it's still valid.
+// On page load/refresh: restore a saved session (token + staff) if still valid.
 function restoreSession() {
   try {
     const raw = localStorage.getItem('th_session');
     if (!raw) return;
     const s = JSON.parse(raw);
-    if (!s || !s.id || (Date.now() - (s.t || 0)) > 12 * 60 * 60 * 1000) {
+    if (!s || !s.token || !s.staff || (Date.now() - (s.t || 0)) > 12 * 60 * 60 * 1000) {
       localStorage.removeItem('th_session');
       return;
     }
-    const staff = getStaffList().find(x => x.staffId === s.id && x.status === 'active');
-    if (!staff) { localStorage.removeItem('th_session'); return; }
-    enterDashboard(staff);
+    authToken = s.token;
+    // If the token is stale server-side, the first API call 401s and
+    // handleAuthError() sends us back to login automatically.
+    enterDashboard(s.staff);
   } catch(e) {}
 }
 
-// Settings -> Save Changes: persists name/email (and optionally a new
-// password) to this staff's record in the local staff store.
-function saveProfile() {
+// Settings -> Save Changes: persists name/email (and optional new password)
+// to the logged-in staff's real backend record via PUT /api/staff/me.
+async function saveProfile() {
   if (!currentStaff) return;
   const name = document.getElementById('settingsNameInput').value.trim();
   const email = document.getElementById('settingsEmailInput').value.trim();
   const pw = document.getElementById('settingsPwInput').value;
   if (!name || !email) { showToast('Name and email cannot be empty','red'); return; }
   if (pw && pw.length < 6) { showToast('New password must be at least 6 characters','red'); return; }
-  const staff = getStaffList();
-  const rec = staff.find(s => s.staffId === currentStaff.staffId);
-  if (!rec) { showToast('Could not find your staff record','red'); return; }
-  rec.name = name;
-  rec.email = email;
-  if (pw) rec.password = pw;
-  saveStaffList(staff);
-  currentStaff = rec;
-  const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase();
-  document.getElementById('topbarName').textContent = name;
-  document.getElementById('topbarAvatar').textContent = initials;
-  document.getElementById('settingsAvatar').textContent = initials;
-  document.getElementById('settingsName').textContent = name;
-  document.getElementById('settingsEmail').textContent = email;
-  document.getElementById('settingsPwInput').value = '';
-  showToast(pw ? 'Profile updated — use your new password next login' : 'Profile updated!','green');
+  try {
+    const r = await fetch(API + '/staff/me', { method:'PUT', headers: authHeaders(),
+      body: JSON.stringify(pw ? { name, email, password: pw } : { name, email }) });
+    if (!r.ok) { handleAuthError(r.status); showToast('Could not save changes','red'); return; }
+    currentStaff.name = name; currentStaff.email = email;
+    try { const s = JSON.parse(localStorage.getItem('th_session') || '{}'); if (s.staff) { s.staff.name = name; s.staff.email = email; localStorage.setItem('th_session', JSON.stringify(s)); } } catch(e) {}
+    const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase();
+    document.getElementById('topbarName').textContent = name;
+    document.getElementById('topbarAvatar').textContent = initials;
+    document.getElementById('settingsAvatar').textContent = initials;
+    document.getElementById('settingsName').textContent = name;
+    document.getElementById('settingsEmail').textContent = email;
+    document.getElementById('settingsPwInput').value = '';
+    showToast(pw ? 'Profile updated — use your new password next login' : 'Profile updated!','green');
+  } catch(e) {
+    showToast('Could not reach the server','red');
+  }
 }
 
 function logout() {
   if (!confirm('Sign out of the admin panel?')) return;
   currentStaff = null;
+  authToken = null;
   try { localStorage.removeItem('th_session'); } catch(e) {}
   document.getElementById('loginId').value = '';
   document.getElementById('loginPw').value = '';
@@ -922,19 +926,29 @@ let liveBuses     = [];
 let liveDrivers   = [];
 let liveOperators = [];
 
+let authToken = null;
+function authHeaders() {
+  const h = { 'Content-Type': 'application/json' };
+  if (authToken) h['Authorization'] = 'Bearer ' + authToken;
+  return h;
+}
+// A 401/403 means our token is missing or expired — send the user back to login.
+function handleAuthError(status) {
+  if (status === 401 || status === 403) forceReLogin();
+}
 async function apiGet(path) {
-  const r = await fetch(API + path, {headers:{'Content-Type':'application/json'}});
-  if (!r.ok) throw new Error(r.status);
+  const r = await fetch(API + path, {headers: authHeaders()});
+  if (!r.ok) { handleAuthError(r.status); throw new Error(r.status); }
   return r.json();
 }
 async function apiPost(path, body) {
-  const r = await fetch(API + path, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if (!r.ok) throw new Error(r.status);
+  const r = await fetch(API + path, {method:'POST',headers:authHeaders(),body:JSON.stringify(body)});
+  if (!r.ok) { handleAuthError(r.status); throw new Error(r.status); }
   return r.json();
 }
 async function apiDelete(path) {
-  const r = await fetch(API + path, {method:'DELETE',headers:{'Content-Type':'application/json'}});
-  if (!r.ok) throw new Error(r.status);
+  const r = await fetch(API + path, {method:'DELETE',headers:authHeaders()});
+  if (!r.ok) { handleAuthError(r.status); throw new Error(r.status); }
   return r.json().catch(()=>({}));
 }
 
