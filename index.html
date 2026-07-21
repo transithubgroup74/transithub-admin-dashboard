@@ -399,7 +399,7 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
       </div>
       <div class="card">
         <table class="table">
-          <thead><tr><th>Route</th><th>Operator</th><th>Departs</th><th>Class</th><th>Load</th><th>Status</th></tr></thead>
+          <thead><tr><th>Route</th><th>Operator</th><th>Departs</th><th>Class</th><th>Load</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="schedulesTable"><tr><td colspan="5" style="text-align:center;color:var(--text2);padding:24px">Loading from Railway...</td></tr></tbody>
         </table>
       </div>
@@ -413,7 +413,7 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
       </div>
       <div class="card">
         <table class="table">
-          <thead><tr><th>Origin</th><th>Destination</th><th>Base Price</th><th>Operator</th><th>Route ID</th></tr></thead>
+          <thead><tr><th>Origin</th><th>Destination</th><th>Base Price</th><th>Operator</th><th>Route ID</th><th>Action</th></tr></thead>
           <tbody id="routesTable"><tr><td colspan="5" style="text-align:center;color:var(--text2);padding:24px">Loading from Railway...</td></tr></tbody>
         </table>
       </div>
@@ -1272,7 +1272,7 @@ function renderSchedules() {
   data.sort((a,b)=>new Date(a.departsAt)-new Date(b.departsAt));
 
   const tbody = document.getElementById('schedulesTable');
-  if (!data.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:24px">No schedules found.</td></tr>'; return; }
+  if (!data.length) { tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">No schedules found.</td></tr>'; return; }
   tbody.innerHTML = data.slice(0,100).map(s=>`<tr>
     <td style="font-weight:500"><span style="color:var(--text2)">${s.route?.origin||'—'}</span> <span style="color:var(--gold)">→</span> ${s.route?.destination||'—'}</td>
     <td style="font-size:12px">${s.route?.operator?.companyName||'—'}</td>
@@ -1280,6 +1280,7 @@ function renderSchedules() {
     <td><span class="badge badge-gray">Regular</span></td>
     <td>${loadCell(s)}</td>
     <td><span class="badge ${(s.status||'').toLowerCase()==='active'?'badge-green':(s.status||'').toLowerCase()==='delayed'?'badge-orange':'badge-gray'}">${(s.status||'active').toUpperCase()}</span></td>
+    <td>${s.id ? `<button class="btn btn-sm btn-outline" onclick="deleteSchedule('${s.id}','${(s.route?.origin||'')} → ${(s.route?.destination||'')}')">Remove</button>` : ''}</td>
   </tr>`).join('');
 }
 
@@ -1307,14 +1308,43 @@ function renderRoutes() {
   if (routeSearch) data = data.filter(r=>`${r.origin} ${r.destination}`.toLowerCase().includes(routeSearch.toLowerCase()));
 
   const tbody = document.getElementById('routesTable');
-  if (!data.length) { tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:24px">No routes found.</td></tr>'; return; }
+  if (!data.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:24px">No routes found.</td></tr>'; return; }
   tbody.innerHTML = data.map(r=>`<tr>
     <td>${r.origin||'—'}</td>
     <td>${r.destination||'—'}</td>
     <td style="color:var(--gold);font-weight:600">GHS ${parseFloat(r.basePrice||0).toFixed(2)}</td>
     <td>${r.operator?.companyName||'—'}</td>
     <td style="font-family:monospace;font-size:11px;color:var(--text2)">${String(r.id||'').slice(0,8)}</td>
+    <td>${r.id ? `<button class="btn btn-sm btn-outline" onclick="deleteRoute('${r.id}','${(r.origin||'')} → ${(r.destination||'')}')">Remove</button>` : ''}</td>
   </tr>`).join('');
+}
+
+// Removing a route also clears the timetable generated for it. The server
+// refuses if any passenger holds a booking, and says how many.
+async function deleteRoute(id, label){
+  if (!confirm('Remove the route ' + label + '?\n\nIts scheduled trips will be removed too.')) return;
+  try {
+    const out = await apiDelete('/routes/' + id);
+    liveRoutes = liveRoutes.filter(r=>r.id!==id);
+    renderRoutes();
+    showToast('Route removed' + (out.schedulesRemoved ? ` (${out.schedulesRemoved} trips)` : ''), 'green');
+    try { liveSchedules = ((await apiGet('/admin/schedules'))||[]).map(normalizeSchedule); applyCompanyScope(); renderSchedules(); updateDashboard(); } catch(e){}
+  } catch(e){
+    showToast(e && e.message ? e.message : 'Could not remove route', 'red');
+  }
+}
+
+async function deleteSchedule(id, label){
+  if (!confirm('Remove the ' + label + ' trip?')) return;
+  try {
+    await apiDelete('/schedules/' + id);
+    liveSchedules = liveSchedules.filter(s=>s.id!==id);
+    renderSchedules();
+    updateDashboard();
+    showToast('Trip removed','green');
+  } catch(e){
+    showToast(e && e.message ? e.message : 'Could not remove trip', 'red');
+  }
 }
 function filterRoutesLive(v){routeSearch=v;renderRoutes();}
 
