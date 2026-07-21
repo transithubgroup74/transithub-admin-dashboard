@@ -913,6 +913,7 @@ let liveBookings  = [];
 let liveBuses     = [];
 let liveDrivers   = [];
 let liveOperators = [];
+let liveStaff = [];
 
 let authToken = null;
 function authHeaders() {
@@ -931,7 +932,11 @@ async function apiGet(path) {
 }
 async function apiPost(path, body) {
   const r = await fetch(API + path, {method:'POST',headers:authHeaders(),body:JSON.stringify(body)});
-  if (!r.ok) { handleAuthError(r.status); throw new Error(r.status); }
+  if (!r.ok) {
+    handleAuthError(r.status);
+    const msg = await r.json().then(j=>j.error||j.message).catch(()=>null);
+    throw new Error(msg || r.status);
+  }
   return r.json();
 }
 async function apiPut(path, body) {
@@ -947,7 +952,11 @@ async function apiPut(path, body) {
 }
 async function apiDelete(path) {
   const r = await fetch(API + path, {method:'DELETE',headers:authHeaders()});
-  if (!r.ok) { handleAuthError(r.status); throw new Error(r.status); }
+  if (!r.ok) {
+    handleAuthError(r.status);
+    const msg = await r.json().then(j=>j.error||j.message).catch(()=>null);
+    throw new Error(msg || r.status);
+  }
   return r.json().catch(()=>({}));
 }
 
@@ -1000,12 +1009,19 @@ async function loadAllData() {
   } catch(e) {
     liveBuses = []; liveDrivers = []; liveOperators = [];
   }
+  // Staff come from the server — these are the accounts that can actually log in.
+  try {
+    liveStaff = (await apiGet('/staff')) || [];
+  } catch(e) {
+    liveStaff = [];
+  }
   applyCompanyScope();
   updateDashboard();
   renderBookings();
   renderPassengers();
   renderBuses();
   renderDrivers();
+  renderStaff();
 }
 
 // Hide the throwaway accounts created while testing the backend.
@@ -1303,7 +1319,11 @@ function renderRoutes() {
 function filterRoutesLive(v){routeSearch=v;renderRoutes();}
 
 function renderStaff() {
-  const staff = getStaffList();
+  // Prefer the server list — those are the accounts that can actually log in.
+  // The local list is only a fallback for when the backend is unreachable.
+  const staff = (liveStaff && liveStaff.length)
+    ? liveStaff.map(s => ({...s, last: s.lastLogin ? new Date(s.lastLogin).toLocaleString() : 'Never'}))
+    : getStaffList();
   document.getElementById('staffTable').innerHTML = staff.map(s=>`<tr>
     <td><span class="id-pill">${s.staffId}</span></td>
     <td><div style="display:flex;align-items:center;gap:8px">
@@ -1315,8 +1335,24 @@ function renderStaff() {
     <td style="color:var(--text2)">${s.company}</td>
     <td style="color:var(--text2);font-size:12px">${s.last}</td>
     <td><span class="badge ${s.status==='active'?'badge-green':'badge-gray'}">${s.status}</span></td>
-    <td><button class="btn btn-sm btn-outline" onclick="showStaffId('${s.staffId}','${s.name}')">View ID</button></td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-sm btn-outline" onclick="showStaffId('${s.staffId}','${s.name}')">View ID</button>
+      ${s.staffId === currentStaff?.staffId ? '' :
+        `<button class="btn btn-sm btn-outline" style="margin-left:6px" onclick="deleteStaff('${s.staffId}','${s.name}')">Remove</button>`}
+    </td>
   </tr>`).join('');
+}
+
+async function deleteStaff(staffId, name){
+  if (!confirm('Remove ' + name + ' (' + staffId + ')? They will no longer be able to log in.')) return;
+  try {
+    await apiDelete('/staff/' + staffId);
+    liveStaff = liveStaff.filter(s => s.staffId !== staffId);
+    renderStaff();
+    showToast(name + ' removed', 'green');
+  } catch(e) {
+    showToast(e && e.message ? e.message : 'Could not remove staff', 'red');
+  }
 }
 
 function showStaffId(id, name) {
@@ -1550,7 +1586,10 @@ function updatePreviewId() {
   if (el) el.textContent = generateStaffId(role, company);
 }
 
-function addStaff() {
+// Creates the account on the server. It used to be saved to localStorage only,
+// which meant a new staff member appeared in this table but could never log in —
+// login checks the server.
+async function addStaff() {
   const name    = document.getElementById('newStaffName').value.trim();
   const email   = document.getElementById('newStaffEmail').value.trim();
   const role    = document.getElementById('newStaffRole').value;
@@ -1558,24 +1597,18 @@ function addStaff() {
   const pw      = document.getElementById('newStaffPw').value;
 
   if (!name||!email||!company||!pw) { showToast('Please fill in all fields','red'); return; }
+  if (pw.length < 6) { showToast('Password must be at least 6 characters','red'); return; }
 
-  const newId = generateStaffId(role, company);
-  const staff = getStaffList();
-  const newMember = {
-    staffId: newId,
-    name, email, role, company,
-    password: pw,
-    last: 'Never',
-    status: 'active'
-  };
-  staff.push(newMember);
-  saveStaffList(staff);
-  renderStaff();
-  closeModal();
-  showToast(`Staff added! ID: ${newId}`,'green');
-
-  // Show the ID to the admin immediately
-  setTimeout(()=>showStaffId(newId, name), 400);
+  try {
+    const created = await apiPost('/staff', { name, email, role, company, password: pw });
+    liveStaff.push(created);
+    renderStaff();
+    closeModal();
+    showToast(`Staff added! ID: ${created.staffId}`,'green');
+    setTimeout(()=>showStaffId(created.staffId, name), 400);
+  } catch(e) {
+    showToast(e && e.message ? e.message : 'Could not add staff','red');
+  }
 }
 
 const LBL='font-size:12px;color:var(--text2);margin-bottom:4px;display:block';
