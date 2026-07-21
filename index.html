@@ -399,7 +399,7 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
       </div>
       <div class="card">
         <table class="table">
-          <thead><tr><th>Route</th><th>Operator</th><th>Departs</th><th>Class</th><th>Status</th></tr></thead>
+          <thead><tr><th>Route</th><th>Operator</th><th>Departs</th><th>Class</th><th>Load</th><th>Status</th></tr></thead>
           <tbody id="schedulesTable"><tr><td colspan="5" style="text-align:center;color:var(--text2);padding:24px">Loading from Railway...</td></tr></tbody>
         </table>
       </div>
@@ -433,7 +433,7 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
       </div>
       <div class="card">
         <table class="table">
-          <thead><tr><th>Plate</th><th>Operator</th><th>Model</th><th>Class</th><th>Capacity</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>Plate</th><th>Operator</th><th>Model</th><th>Class</th><th>Capacity</th><th>Driver</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="busesTable"></tbody>
         </table>
       </div>
@@ -934,6 +934,17 @@ async function apiPost(path, body) {
   if (!r.ok) { handleAuthError(r.status); throw new Error(r.status); }
   return r.json();
 }
+async function apiPut(path, body) {
+  const r = await fetch(API + path, {method:'PUT',headers:authHeaders(),body:JSON.stringify(body)});
+  if (!r.ok) {
+    handleAuthError(r.status);
+    // Surface the server's reason (e.g. "X belongs to a different company")
+    // rather than a bare status code.
+    const msg = await r.json().then(j=>j.error||j.message).catch(()=>null);
+    throw new Error(msg || r.status);
+  }
+  return r.json();
+}
 async function apiDelete(path) {
   const r = await fetch(API + path, {method:'DELETE',headers:authHeaders()});
   if (!r.ok) { handleAuthError(r.status); throw new Error(r.status); }
@@ -1036,6 +1047,10 @@ function normalizeSchedule(s){
     status: s.status,
     busClass: s.busClass,
     source: s.source,
+    capacity: s.capacity,
+    seatsBooked: s.seatsBooked,
+    plateNumber: s.plateNumber,
+    driverName: s.driverName,
   };
 }
 function normalizeBooking(b){
@@ -1241,14 +1256,31 @@ function renderSchedules() {
   data.sort((a,b)=>new Date(a.departsAt)-new Date(b.departsAt));
 
   const tbody = document.getElementById('schedulesTable');
-  if (!data.length) { tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:24px">No schedules found.</td></tr>'; return; }
+  if (!data.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:24px">No schedules found.</td></tr>'; return; }
   tbody.innerHTML = data.slice(0,100).map(s=>`<tr>
     <td style="font-weight:500"><span style="color:var(--text2)">${s.route?.origin||'—'}</span> <span style="color:var(--gold)">→</span> ${s.route?.destination||'—'}</td>
     <td style="font-size:12px">${s.route?.operator?.companyName||'—'}</td>
     <td style="color:var(--gold)">${s.departsAt?.slice(0,16).replace('T',' ')||'—'}</td>
     <td><span class="badge badge-gray">Regular</span></td>
+    <td>${loadCell(s)}</td>
     <td><span class="badge ${(s.status||'').toLowerCase()==='active'?'badge-green':(s.status||'').toLowerCase()==='delayed'?'badge-orange':'badge-gray'}">${(s.status||'active').toUpperCase()}</span></td>
   </tr>`).join('');
+}
+
+// How full a bus is: "12/45" with a bar that turns orange past 70% and red
+// past 90%, so an operator can spot a run about to sell out at a glance.
+function loadCell(s){
+  const cap = Number(s.capacity)||0, sold = Number(s.seatsBooked)||0;
+  if (!cap) return '<span style="color:var(--text2);font-size:12px">—</span>';
+  const pct = Math.min(100, Math.round(sold/cap*100));
+  const col = pct>=90 ? '#e5484d' : pct>=70 ? '#f5a524' : 'var(--green,#30a46c)';
+  const title = s.plateNumber ? `${s.plateNumber}${s.driverName?' · '+s.driverName:''}` : '';
+  return `<div title="${title}" style="min-width:96px">
+      <div style="font-size:12px;margin-bottom:3px"><b>${sold}</b><span style="color:var(--text2)">/${cap}</span>
+        <span style="color:${col};font-size:11px;margin-left:4px">${pct}%</span></div>
+      <div style="height:5px;border-radius:3px;background:rgba(127,127,127,0.22);overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${col}"></div></div>
+    </div>`;
 }
 function filterSchedulesLive(v){scheduleSearch=v;renderSchedules();}
 function filterScheduleDate(v){scheduleDateFilter=v;renderSchedules();}
@@ -1324,7 +1356,7 @@ function renderBuses() {
   set('busActive',active); set('busMaint',maint); set('busExec',exec); set('busTotal',buses.length);
 
   const tbody = document.getElementById('busesTable');
-  if (!buses.length) { tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">No buses yet. Add one with “+ Add Bus”.</td></tr>'; return; }
+  if (!buses.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">No buses yet. Add one with “+ Add Bus”.</td></tr>'; return; }
   tbody.innerHTML = buses.map(b=>{
     const cls = busClass(b);
     const plate = b.plate || b.plateNumber || '—';
@@ -1339,9 +1371,35 @@ function renderBuses() {
     <td>${company}</td><td>${b.model||'—'}</td>
     <td><span class="badge ${cls==='Executive'?'badge-gold':'badge-gray'}">${cls}</span></td>
     <td>${cap}</td>
+    <td>${driverCell(b)}</td>
     <td><span class="badge ${st==='active'?'badge-green':'badge-orange'}">${st}</span></td>
     <td>${action}</td>
   </tr>`;}).join('');
+}
+
+// Driver picker, limited to drivers from the same company as the bus — the
+// backend rejects a cross-company assignment, so don't offer it here either.
+function driverCell(b){
+  if (!b.id) return `<span style="color:var(--text2);font-size:12px">${b.driverName||'—'}</span>`;
+  const pool = (liveDrivers||[]).filter(d=>d.id && (!b.company || !d.company || d.company===b.company));
+  if (!pool.length) return `<span style="color:var(--text2);font-size:12px">No drivers</span>`;
+  const opts = pool.map(d=>`<option value="${d.id}" ${d.id===b.driverId?'selected':''}>${d.name}</option>`).join('');
+  return `<select class="input" style="padding:5px 8px;font-size:12px;min-width:130px"
+      onchange="assignDriver('${b.id}', this.value)">
+      <option value="">— Unassigned —</option>${opts}</select>`;
+}
+
+async function assignDriver(busId, driverId){
+  try {
+    const updated = await apiPut('/buses/'+busId+'/driver', { driverId: driverId || null });
+    const i = liveBuses.findIndex(b=>b.id===busId);
+    if (i > -1) liveBuses[i] = { ...liveBuses[i], driverId: updated.driverId, driverName: updated.driverName };
+    showToast(updated.driverName ? updated.driverName+' assigned' : 'Driver unassigned', 'green');
+    renderBuses();
+  } catch(e){
+    showToast(e && e.message ? e.message : 'Could not assign driver', 'red');
+    renderBuses();  // put the dropdown back to what the server actually has
+  }
 }
 async function deleteBus(id, plate){
   if(!confirm('Remove bus '+plate+' from the fleet?')) return;
