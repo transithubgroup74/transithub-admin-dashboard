@@ -508,11 +508,29 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
         </div>
         <div class="card">
           <div class="card-title">Convenience Fee</div>
-          <div style="text-align:center;padding:24px 0">
-            <div style="font-size:48px;font-weight:700;color:var(--gold);margin-bottom:8px">GHS 3.00</div>
-            <div style="font-size:13px;color:var(--text2)">Charged per booking on the passenger app</div>
-            <div style="margin-top:24px;font-size:13px;color:var(--text2)">Monthly projection (1,000 bookings)</div>
-            <div style="font-size:28px;font-weight:500;color:var(--gold);margin-top:4px">GHS 3,000</div>
+          <div style="padding:8px 0 4px">
+            <div style="text-align:center;margin-bottom:18px">
+              <div style="font-size:44px;font-weight:700;color:var(--gold);line-height:1.1" id="feeEarned">GHS 0</div>
+              <div style="font-size:13px;color:var(--text2);margin-top:4px" id="feeEarnedSub">earned from bookings</div>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
+              <thead><tr>
+                <th style="text-align:left;padding:6px 0;color:var(--text2);font-weight:500;font-size:12px">Ticket price</th>
+                <th style="text-align:right;padding:6px 0;color:var(--text2);font-weight:500;font-size:12px">Fee</th>
+                <th style="text-align:right;padding:6px 0;color:var(--text2);font-weight:500;font-size:12px">Bookings</th>
+              </tr></thead>
+              <tbody id="feeBandsTable"></tbody>
+            </table>
+            <div style="border-top:1px dashed var(--border);padding-top:14px;display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:12px;color:var(--text2)">Average per booking</div>
+                <div style="font-size:18px;font-weight:600;color:var(--gold)" id="feeAverage">GHS 0.00</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:12px;color:var(--text2)">Projected at 1,000 bookings</div>
+                <div style="font-size:18px;font-weight:600;color:var(--gold)" id="feeProjection">GHS 0</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -642,7 +660,7 @@ body.light-mode select.input option{background:#fff;color:#1A1A2E}
           <div class="card-title">App Settings</div>
           <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px">Dark Mode</div><div style="font-size:12px;color:var(--text2)">Toggle dark/light theme</div></div><button class="btn btn-sm btn-outline" onclick="toggleTheme()" id="settingsThemeBtn">Toggle</button></div>
           <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px">Passenger App API</div><div style="font-size:12px;color:var(--text2)">Railway backend endpoint</div></div><div style="font-size:11px;color:var(--gold);font-family:monospace">railway.app</div></div>
-          <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px">Convenience Fee</div><div style="font-size:12px;color:var(--text2)">Charged per booking</div></div><div style="font-size:14px;font-weight:500;color:var(--gold)">GHS 3.00</div></div>
+          <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px">Convenience Fee</div><div style="font-size:12px;color:var(--text2)">Banded by ticket price</div></div><div style="font-size:14px;font-weight:500;color:var(--gold)">GHS 2 – 8</div></div>
           <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px">Payment Gateway</div><div style="font-size:12px;color:var(--text2)">Current processor</div></div><div style="font-size:14px;font-weight:500;color:var(--gold)">Paystack</div></div>
           <div style="padding:12px 0;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px">App Version</div></div><div style="font-size:13px;color:var(--text2)">v1.0.0</div></div>
         </div>
@@ -1197,6 +1215,51 @@ function updateDashboard() {
   renderRecentBookings();
   renderChart();
   renderStatusBreakdown();
+  renderConvenienceFee();
+}
+
+// Fee bands from the proposal (§6.1). These must stay in step with
+// convenienceFee() in the app's app/screens/summary.tsx.
+const FEE_BANDS = [
+  { label: 'GHS 1 – 50',   max: 50,       fee: 2 },
+  { label: 'GHS 51 – 100', max: 100,      fee: 3 },
+  { label: 'GHS 101 – 200',max: 200,      fee: 5 },
+  { label: 'Above GHS 200',max: Infinity, fee: 8 },
+];
+
+// A booking's total already has the fee inside it, so match on
+// (fare cap + that band's fee) to recover which band it fell into.
+function feeBandForTotal(total) {
+  return FEE_BANDS.find(b => total <= b.max + b.fee) || FEE_BANDS[FEE_BANDS.length - 1];
+}
+
+function renderConvenienceFee() {
+  const paid = (liveBookings || []).filter(b => /confirmed|completed/i.test(b.status || ''));
+  const counts = new Map(FEE_BANDS.map(b => [b.label, 0]));
+  let earned = 0;
+  paid.forEach(b => {
+    const band = feeBandForTotal(parseFloat(b.totalAmount) || 0);
+    counts.set(band.label, counts.get(band.label) + 1);
+    earned += band.fee;
+  });
+  const avg = paid.length ? earned / paid.length : 0;
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('feeEarned', 'GHS ' + earned.toFixed(2));
+  set('feeEarnedSub', paid.length
+    ? `earned from ${paid.length} paid booking${paid.length === 1 ? '' : 's'}`
+    : 'no paid bookings yet');
+  set('feeAverage', 'GHS ' + avg.toFixed(2));
+  set('feeProjection', 'GHS ' + Math.round(avg * 1000).toLocaleString());
+
+  const tbody = document.getElementById('feeBandsTable');
+  if (tbody) {
+    tbody.innerHTML = FEE_BANDS.map(b => `<tr>
+      <td style="padding:5px 0;color:var(--text2)">${b.label}</td>
+      <td style="padding:5px 0;text-align:right;color:var(--gold);font-weight:600">GHS ${b.fee}</td>
+      <td style="padding:5px 0;text-align:right;color:var(--text2)">${counts.get(b.label)}</td>
+    </tr>`).join('');
+  }
 }
 
 function renderRecentBookings() {
